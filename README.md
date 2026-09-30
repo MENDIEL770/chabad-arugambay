@@ -80,3 +80,10 @@ npm test
   פונקציות עזר ל-RLS, `tenant_settings`, `audit_log`.
 - `0002_calendar.sql` — `tenant_zmanim` עם קדימות `manual > imported > computed`
   שנאכפת בטריגר, לא רק בקוד.
+
+## אב-טיפוס עיצובי
+
+`design/home-prototype.html` — דף הבית, עצמאי לגמרי (פונטים מוטמעים כ-data URI).
+נבדק ב-390px וב-1486px, בהיר וכהה, בלי גלילה אופקית.
+הנתונים בו אמיתיים: זמני שמיני עצרת ושמחת תורה מחושבים מ-`src/lib/zmanim/`,
+הפרשות והחגים מ-`@hebcal/core`. הקישורים עדיין לא מחוברים.
