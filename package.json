@@ -6,21 +6,31 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
+    "@hebcal/core": "^6.11.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.2",
+    "kosher-zmanim": "^0.9.0",
+    "luxon": "^3.7.2",
     "next": "16.3.7",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/luxon": "^3.7.6",
+    "@types/node": "^24.19.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.7",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.2"
   }
 }

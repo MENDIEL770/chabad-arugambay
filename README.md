@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# בית חב״ד ארוגם ביי — מערכת ניהול
 
-## Getting Started
+Next.js 16 (App Router) + TypeScript + Tailwind v4 + Supabase.
+אירועים ורישום לשבתות · מסעדה והזמנות · משלוחים · CRM · ממשק ניהול אחד.
 
-First, run the development server:
+Single-tenant בפועל (ארוגם ביי), multi-tenant-ready בסכימה — `tenant_id` בכל
+טבלה מהיום הראשון, בלי UI של חשבון-על.
+
+## סטטוס לפי סדר הבנייה
+
+- [x] **שלב 1** — סכימה: core (tenants, memberships, RLS helpers, settings, audit) + calendar.
+- [x] **שלב 2** — מודול זמנים לשיטת אדמו״ר הזקן, 19 בדיקות עוברות מול העוגנים.
+- [~] **שלב 3** — מערכת עיצוב: טוקנים + RTL + Rubik ✅ · רכיבים ודף ציבורי — בבנייה.
+- [ ] שלב 4 — אירועים: עורך, טופס ציבורי, סליקה, הרשמות, מיילים.
+- [ ] שלב 5 — מחולל שבתות + דוחות.
+- [ ] שלב 6 — מסעדה: תפריט, ניהול, הזמנות, KDS, מלאי.
+- [ ] שלב 7 — הדפסה תרמית (CloudPRNT + Agent), עברית כ-raster.
+- [ ] שלב 8 — משלוחים: `internal` → `assisted` → PickMe Flash.
+- [ ] שלב 9 — תיירות/המלצות, מאמרים, בוט + מאגר ידע, CRM.
+- [ ] שלב 10 — הקשחה, E2E, PWA.
+
+## הרצה
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```bash
+npm test
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## החלטות שסוטות מהמפרט המקורי
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| נושא | המפרט | בפועל | למה |
+|---|---|---|---|
+| Next.js | 15 | **16.3.7** | `create-next-app` מתקין 16; אין סיבה להוריד גרסה. |
+| עיצוב | סעיף 2, "בית על החוף", חול/דיו/ים, Frank Ruhl Libre | **שפת PickMe** — ענבר `#FDB940`, דיו `#211F20`, לבן, `#F4F8FB` | החלטה מאוחרת שלך. סעיף 2 מבוטל. |
+| טיפוגרפיה | Frank Ruhl Libre + Heebo | **Rubik** לכל הממשק | PickMe משתמשים ב-Manrope, שאין לו עברית. Rubik מאותה משפחה ויזואלית ומכסה עברית+לטינית — "פונט אחיד להכל". |
+| עיגולים | "פינות חתוכות, בלי כרטיסים" | 16px כרטיסים, 50px כפתורי גלולה | נמדד מהעמוד החי של PickMe, לא משוער. |
 
-## Learn More
+הצבעים והרדיוסים נקראו מ-computed styles של `pickme.lk`, לא מניחוש.
 
-To learn more about Next.js, take a look at the following resources:
+## זמני הלכה — מצב הכיול
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`src/lib/zmanim/` מחשב לשיטת אדמו״ר הזקן. הרפרנס המחייב הוא
+[zmanim.org.il](https://zmanim.org.il) (הרב יעקב סנגאוי), שמחשב בצד הלקוח
+ואין לו API — כלומר אי אפשר לקרוא לו, צריך **לשחזר** אותו. שחזור דורש כיול,
+והקבועים יושבים ב-`profile.ts` ולא פזורים בקוד.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+מול העוגנים שנתת ל-22/09/2026, **9 מתוך 10 זמנים בתוך דקה**:
 
-## Deploy on Vercel
+| | רפרנס | מחושב |
+|---|---|---|
+| עלות · זריחה אמיתית · סוזק״ש · חצות | 4:06 · 5:47 · 8:51 · 11:55 | ✅ ✅ ✅ ✅ |
+| מנחה גדולה · מנחה קטנה | 12:26 · 15:30 | ✅ ✅ |
+| שקיעה נראית · אמיתית · צאת | 18:00 · 18:04 · 18:21 | ✅ ✅ ✅ |
+| פלג המנחה | 16:46 | ⚠️ 16:47 (סטייה 1.2 דק׳) |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+שלוש נקודות שדורשות החלטה, מתועדות בקוד:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **`horizonDipMeters: 80.5`** — לא הגובה האמיתי של ארוגם ביי (עיירת חוף, ~3 מ׳).
+   זה הערך שמשחזר את הזריחה/שקיעה של הרפרנס, שמשתמש בשבירה גדולה יותר ממודל
+   סטנדרטי בגובה הים. השם מעיד על כך כדי שאף אחד לא "יתקן" ל-3 וישבור הכול.
+2. **עלות וצאת — שני מודלים מתאימים באותה מידה** לתאריך הבודד שיש לי:
+   מעלות (27.13° / 6.34°) או דקות קבועות (104 / 21). הם מתפצלים בכמה דקות
+   בתקופות השונות של השנה. כרגע נבחרו המעלות.
+3. **פלג** — אף נוסחה מוכרת לא נותנת 16:46; הקרובה נותנת 16:47.2.
+   בדיקה ייעודית מקבעת את הסטייה כדי שלא תגדל בשקט.
+
+**כדי לסגור את 2 ו-3 אני צריך ממך שני תאריכים נוספים** מ-zmanim.org.il באותו
+מיקום — עדיף **21/12/2026** ו-**21/06/2027** (היפוכים, שם המודלים מתפצלים הכי
+הרבה). עלות, שקיעה נראית, פלג וצאת מכל תאריך יספיקו.
+
+## סכימה
+
+`supabase/migrations/` — להריץ לפי הסדר ב-SQL Editor.
+
+- `0001_core.sql` — tenants, memberships, device_sessions (PIN למטבח/שליחים),
+  פונקציות עזר ל-RLS, `tenant_settings`, `audit_log`.
+- `0002_calendar.sql` — `tenant_zmanim` עם קדימות `manual > imported > computed`
+  שנאכפת בטריגר, לא רק בקוד.
