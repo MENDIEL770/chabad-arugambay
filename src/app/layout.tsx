@@ -42,6 +42,14 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     <html
       lang="he"
       dir="rtl"
+      /**
+       * The bootstrap script below stamps data-theme before React hydrates,
+       * so the client <html> deliberately differs from the server's. That is
+       * the whole point — it is what prevents a flash of the wrong theme —
+       * and it is the one case React documents this attribute for. Scoped to
+       * <html> only, so a genuine mismatch anywhere inside still reports.
+       */
+      suppressHydrationWarning
       className={`${rubik.variable} ${mono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-bg text-fg">
