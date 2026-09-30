@@ -4,6 +4,10 @@ import { useMemo, useState } from 'react';
 import type { MenuCategory, MenuItem } from '@/lib/data/types';
 import { isSellable } from '@/lib/data/types';
 import { formatLkr, lkrToIls } from '@/lib/config';
+import {
+  describeModifications, priceDelta, selectionKey, type Selection,
+} from '@/lib/data/modifiers';
+import { ItemSheet } from './item-sheet';
 
 type Fulfillment = 'delivery' | 'pickup' | 'dine_in';
 
@@ -14,42 +18,78 @@ const FULFILLMENT: { id: Fulfillment; label: string; hint: string }[] = [
 ];
 
 const KOSHER_LABEL: Record<MenuItem['kosher'], string> = {
-  meat: 'בשרי',
-  dairy: 'חלבי',
-  pareve: 'פרווה',
+  meat: 'בשרי', dairy: 'חלבי', pareve: 'פרווה',
 };
 
 const DELIVERY_FEE_LKR = 500;
 
+interface CartLine {
+  key: string;
+  itemId: string;
+  qty: number;
+  selection: Selection;
+}
+
 export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
   const [fulfillment, setFulfillment] = useState<Fulfillment>('delivery');
-  const [cart, setCart] = useState<Record<string, number>>({});
+  const [lines, setLines] = useState<CartLine[]>([]);
+  const [editing, setEditing] = useState<MenuItem | null>(null);
 
-  const allItems = useMemo(
+  const itemsById = useMemo(
     () => new Map(categories.flatMap((c) => c.items).map((i) => [i.id, i])),
     [categories],
   );
 
-  const lines = Object.entries(cart)
-    .map(([id, qty]) => ({ item: allItems.get(id)!, qty }))
-    .filter((l) => l.item);
-
-  const subtotal = lines.reduce((s, l) => s + l.item.priceLkr * l.qty, 0);
-  const fee = fulfillment === 'delivery' && subtotal > 0 ? DELIVERY_FEE_LKR : 0;
-  const total = subtotal + fee;
-  const count = lines.reduce((s, l) => s + l.qty, 0);
-
-  function change(item: MenuItem, delta: number) {
-    // Guard here as well as on the server: a stale tab must not be able to
-    // add a dish that sold out while it sat open.
-    if (delta > 0 && !isSellable(item)) return;
-    setCart((c) => {
-      const next = (c[item.id] ?? 0) + delta;
-      const copy = { ...c };
-      if (next <= 0) delete copy[item.id];
-      else copy[item.id] = next;
+  /** Same dish built differently is a separate line; identical builds merge. */
+  function addLine(item: MenuItem, selection: Selection, qty: number) {
+    const key = selectionKey(item.id, selection);
+    setLines((prev) => {
+      const at = prev.findIndex((l) => l.key === key);
+      if (at === -1) return [...prev, { key, itemId: item.id, qty, selection }];
+      const copy = [...prev];
+      copy[at] = { ...copy[at], qty: copy[at].qty + qty };
       return copy;
     });
+    setEditing(null);
+  }
+
+  function bump(key: string, delta: number) {
+    setLines((prev) =>
+      prev
+        .map((l) => (l.key === key ? { ...l, qty: l.qty + delta } : l))
+        .filter((l) => l.qty > 0),
+    );
+  }
+
+  function onAddClick(item: MenuItem) {
+    if (!isSellable(item)) return;
+    // A dish with nothing to choose goes straight in — no pointless sheet.
+    if (item.modifierGroups.length === 0) {
+      addLine(item, {}, 1);
+      return;
+    }
+    setEditing(item);
+  }
+
+  const priced = lines.map((l) => {
+    const item = itemsById.get(l.itemId)!;
+    const unit = item.priceLkr + priceDelta(item.modifierGroups, l.selection);
+    return {
+      ...l,
+      item,
+      unit,
+      total: unit * l.qty,
+      mods: describeModifications(item.modifierGroups, l.selection),
+    };
+  });
+
+  const subtotal = priced.reduce((s, l) => s + l.total, 0);
+  const fee = fulfillment === 'delivery' && subtotal > 0 ? DELIVERY_FEE_LKR : 0;
+  const total = subtotal + fee;
+  const count = priced.reduce((s, l) => s + l.qty, 0);
+
+  function qtyOf(itemId: string) {
+    return priced.filter((l) => l.itemId === itemId).reduce((s, l) => s + l.qty, 0);
   }
 
   return (
@@ -64,9 +104,7 @@ export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
               onClick={() => setFulfillment(f.id)}
               aria-pressed={on}
               className={`flex flex-col items-start rounded-card border px-4.5 py-3 text-start transition-colors ${
-                on
-                  ? 'border-accent bg-accent-soft'
-                  : 'border-line-strong bg-bg hover:bg-surface'
+                on ? 'border-accent bg-accent-soft' : 'border-line-strong bg-bg hover:bg-surface'
               }`}
             >
               <span className="font-medium">{f.label}</span>
@@ -86,19 +124,13 @@ export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
               <ul className="grid grid-cols-2 gap-4 max-[680px]:grid-cols-1">
                 {cat.items.map((item) => {
                   const sellable = isSellable(item);
-                  const qty = cart[item.id] ?? 0;
-                  const low =
-                    sellable && item.stock === 'count' && (item.stockQty ?? 0) <= 3;
+                  const inCart = qtyOf(item.id);
+                  const low = sellable && item.stock === 'count' && (item.stockQty ?? 0) <= 3;
+                  const customisable = item.modifierGroups.length > 0;
 
                   return (
-                    <li
-                      key={item.id}
-                      className={`card flex gap-4 !p-4 ${sellable ? '' : 'opacity-60'}`}
-                    >
-                      <span
-                        className="grid size-[68px] shrink-0 place-items-center rounded-input bg-accent-soft text-2xl"
-                        aria-hidden="true"
-                      >
+                    <li key={item.id} className={`card flex gap-4 !p-4 ${sellable ? '' : 'opacity-60'}`}>
+                      <span className="grid size-[68px] shrink-0 place-items-center rounded-input bg-accent-soft text-2xl" aria-hidden="true">
                         {item.kosher === 'meat' ? '🍗' : item.kosher === 'dairy' ? '🍳' : '🥗'}
                       </span>
 
@@ -112,34 +144,22 @@ export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
                         <div className="mt-1 flex flex-wrap items-center gap-1.5">
                           <span className="chip chip-kosher">{KOSHER_LABEL[item.kosher]}</span>
                           {!sellable && <span className="chip chip-out">אזל להיום</span>}
-                          {low && (
-                            <span className="chip">נשארו {item.stockQty}</span>
-                          )}
+                          {low && <span className="chip">נשארו {item.stockQty}</span>}
                           <span className="chip">{item.prepMinutes} דק׳</span>
+                          {customisable && <span className="chip">אפשר להתאים</span>}
                         </div>
 
                         <div className="mt-2 flex items-center justify-end gap-2">
-                          {qty > 0 && (
-                            <>
-                              <button
-                                type="button"
-                                className="btn btn-ghost btn-sm !px-3"
-                                onClick={() => change(item, -1)}
-                                aria-label={`הסר ${item.name.he}`}
-                              >
-                                −
-                              </button>
-                              <span className="clock w-6 text-center">{qty}</span>
-                            </>
+                          {inCart > 0 && (
+                            <span className="text-[.78rem] text-fg-subtle">{inCart} בעגלה</span>
                           )}
                           <button
                             type="button"
-                            className="btn btn-accent btn-sm !px-3"
+                            className="btn btn-accent btn-sm"
                             disabled={!sellable}
-                            onClick={() => change(item, 1)}
-                            aria-label={`הוסף ${item.name.he}`}
+                            onClick={() => onAddClick(item)}
                           >
-                            {qty > 0 ? '+' : 'הוסף'}
+                            {customisable ? 'בחירת תוספות' : 'הוסף'}
                           </button>
                         </div>
                       </div>
@@ -154,18 +174,52 @@ export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
         <aside className="sticky top-24 rounded-card border border-line bg-surface p-5 max-[980px]:static">
           <h2 className="mb-3 text-lg font-bold">העגלה</h2>
 
-          {lines.length === 0 ? (
+          {priced.length === 0 ? (
             <p className="text-sm text-fg-muted">עדיין לא הוספתם כלום.</p>
           ) : (
             <>
-              <ul className="flex flex-col gap-2 border-b border-line pb-3">
-                {lines.map((l) => (
-                  <li key={l.item.id} className="flex items-baseline gap-2 text-sm">
-                    <span className="clock text-fg-subtle">{l.qty}×</span>
-                    <span className="min-w-0 flex-1 truncate">{l.item.name.he}</span>
-                    <span className="money text-[.85rem]">
-                      {formatLkr(l.item.priceLkr * l.qty)}
-                    </span>
+              <ul className="flex flex-col gap-3 border-b border-line pb-3">
+                {priced.map((l) => (
+                  <li key={l.key} className="flex flex-col gap-1">
+                    <div className="flex items-baseline gap-2 text-sm">
+                      <span className="min-w-0 flex-1 font-medium">{l.item.name.he}</span>
+                      <span className="money text-[.85rem]">{formatLkr(l.total)}</span>
+                    </div>
+
+                    {l.mods.length > 0 && (
+                      <ul className="flex flex-wrap gap-1">
+                        {l.mods.map((m, i) => (
+                          <li
+                            key={i}
+                            className={`chip !py-0.5 !text-[.68rem] ${
+                              m.kind === 'removal' ? 'chip-out' : ''
+                            }`}
+                          >
+                            {m.text.he}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => bump(l.key, -1)}
+                        aria-label={`הסר ${l.item.name.he}`}
+                        className="grid size-7 place-items-center rounded-full border border-line-strong text-sm hover:bg-bg"
+                      >
+                        −
+                      </button>
+                      <span className="clock w-5 text-center text-sm">{l.qty}</span>
+                      <button
+                        type="button"
+                        onClick={() => bump(l.key, 1)}
+                        aria-label={`עוד ${l.item.name.he}`}
+                        className="grid size-7 place-items-center rounded-full border border-line-strong text-sm hover:bg-bg"
+                      >
+                        +
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -187,7 +241,7 @@ export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
                 </div>
                 <div className="flex justify-between text-[.76rem] text-fg-subtle">
                   <dt>בערך</dt>
-                  <dd className="money">≈ {lkrToIls(total)} ILS</dd>
+                  <dd><span className="money">{lkrToIls(total)}</span> ₪</dd>
                 </div>
               </dl>
 
@@ -207,6 +261,14 @@ export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
           )}
         </aside>
       </div>
+
+      {editing && (
+        <ItemSheet
+          item={editing}
+          onClose={() => setEditing(null)}
+          onAdd={(selection, qty) => addLine(editing, selection, qty)}
+        />
+      )}
     </>
   );
 }

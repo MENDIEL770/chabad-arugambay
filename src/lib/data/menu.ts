@@ -2,10 +2,41 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { hasSupabase, TENANT_ID } from '@/lib/config';
 import { SEED_MENU } from './seed';
 import type { MenuCategory, MenuItem } from './types';
+import type { ModifierGroup } from './modifiers';
 
 type Row = Record<string, unknown>;
 
-function toItem(r: Row, publicUrl: (p: string) => string): MenuItem {
+function toGroups(
+  groupRows: Row[],
+  optionRows: Row[],
+  itemId: string,
+): ModifierGroup[] {
+  return groupRows
+    .filter((g) => g.item_id === itemId)
+    .map((g) => ({
+      id: g.id as string,
+      name: g.name as ModifierGroup['name'],
+      kind: g.kind as ModifierGroup['kind'],
+      minSelect: (g.min_select as number) ?? 0,
+      maxSelect: (g.max_select as number) ?? 1,
+      options: optionRows
+        .filter((o) => o.group_id === g.id)
+        .map((o) => ({
+          id: o.id as string,
+          name: o.name as ModifierGroup['options'][number]['name'],
+          priceDeltaLkr: (o.price_delta_lkr as number) ?? 0,
+          isDefault: Boolean(o.is_default),
+          allowSide: o.allow_side !== false,
+          isAvailable: o.is_available !== false,
+        })),
+    }));
+}
+
+function toItem(
+  r: Row,
+  publicUrl: (p: string) => string,
+  groups: ModifierGroup[],
+): MenuItem {
   const path = (r.image_path as string | null) ?? null;
   return {
     id: r.id as string,
@@ -25,6 +56,7 @@ function toItem(r: Row, publicUrl: (p: string) => string): MenuItem {
     dailyLimit: (r.daily_limit as number | null) ?? null,
     soldToday: (r.sold_today as number) ?? 0,
     sort: (r.sort as number) ?? 0,
+    modifierGroups: groups,
   };
 }
 
@@ -54,6 +86,22 @@ export async function getMenu(): Promise<MenuCategory[]> {
 
   if (itemErr) throw new Error(`Could not load menu items: ${itemErr.message}`);
 
+  const { data: groups, error: gErr } = await sb
+    .from('item_modifier_groups')
+    .select('id, item_id, name, kind, min_select, max_select, sort')
+    .eq('tenant_id', TENANT_ID)
+    .order('sort');
+
+  if (gErr) throw new Error(`Could not load modifier groups: ${gErr.message}`);
+
+  const { data: options, error: oErr } = await sb
+    .from('item_modifier_options')
+    .select('id, group_id, name, price_delta_lkr, is_default, allow_side, is_available, sort')
+    .eq('tenant_id', TENANT_ID)
+    .order('sort');
+
+  if (oErr) throw new Error(`Could not load modifier options: ${oErr.message}`);
+
   const publicUrl = (p: string) => sb.storage.from('menu').getPublicUrl(p).data.publicUrl;
 
   return (cats ?? []).map((c) => ({
@@ -63,6 +111,12 @@ export async function getMenu(): Promise<MenuCategory[]> {
     isActive: c.is_active as boolean,
     items: (items ?? [])
       .filter((i) => i.category_id === c.id)
-      .map((i) => toItem(i as Row, publicUrl)),
+      .map((i) =>
+        toItem(
+          i as Row,
+          publicUrl,
+          toGroups((groups ?? []) as Row[], (options ?? []) as Row[], i.id as string),
+        ),
+      ),
   }));
 }

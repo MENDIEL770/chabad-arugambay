@@ -78,11 +78,29 @@ returns boolean language sql stable as $$
   end
 $$;
 
+/**
+ * Three kinds of group, because they behave differently for the customer
+ * AND for the kitchen:
+ *
+ *   'includes' — what the dish already comes with. Every option starts
+ *                selected; the customer REMOVES things or moves them to the
+ *                side. A laffa comes with chips, tahini, salad; "no onion"
+ *                and "tahini on the side" are both this.
+ *   'single'   — pick exactly one (spice level, size, bread).
+ *   'multi'    — optional paid extras.
+ *
+ * The distinction matters most on the kitchen ticket: for 'includes' the
+ * cook must be told the DIFFERENCE from the standard build, never the full
+ * list, or the exceptions disappear into a wall of text.
+ */
+create type modifier_kind as enum ('includes','single','multi');
+
 create table item_modifier_groups (
   id        uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references tenants(id) on delete cascade,
   item_id   uuid not null references menu_items(id) on delete cascade,
   name      jsonb not null,
+  kind      modifier_kind not null default 'multi',
   min_select int not null default 0,
   max_select int not null default 1,
   sort      int not null default 0,
@@ -95,6 +113,10 @@ create table item_modifier_options (
   group_id       uuid not null references item_modifier_groups(id) on delete cascade,
   name           jsonb not null,
   price_delta_lkr int not null default 0,
+  /** Part of the standard build. Only meaningful for kind = 'includes'. */
+  is_default     boolean not null default false,
+  /** May be requested on the side rather than only in or out. */
+  allow_side     boolean not null default true,
   is_available   boolean not null default true,
   sort           int not null default 0
 );

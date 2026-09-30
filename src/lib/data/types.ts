@@ -1,3 +1,5 @@
+import type { ModifierGroup } from './modifiers';
+
 export interface I18n { he: string; en: string }
 
 export type KosherType = 'meat' | 'dairy' | 'pareve';
@@ -22,6 +24,8 @@ export interface MenuItem {
   dailyLimit: number | null;
   soldToday: number;
   sort: number;
+  /** Removable defaults, choices and paid extras. Empty for a simple dish. */
+  modifierGroups: ModifierGroup[];
 }
 
 export interface MenuCategory {

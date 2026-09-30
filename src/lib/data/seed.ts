@@ -1,4 +1,74 @@
 import type { MenuCategory } from './types';
+import type { ModifierGroup } from './modifiers';
+
+/**
+ * The salad and sauces a laffa or pita arrives with. Every one of them is
+ * something a customer routinely asks to leave out or have on the side, so
+ * they are modelled as removable defaults rather than as paid extras.
+ */
+function saladGroup(prefix: string): ModifierGroup {
+  const inside = [
+    ['chips', 'צ׳יפס', 'Chips'],
+    ['hummus', 'חומוס', 'Hummus'],
+    ['tahini', 'טחינה', 'Tahini'],
+    ['spicy', 'חריף', 'Spicy'],
+    ['tomato', 'עגבניה', 'Tomato'],
+    ['cucumber', 'מלפפון', 'Cucumber'],
+    ['onion', 'בצל', 'Onion'],
+    ['pickles', 'חמוצים', 'Pickles'],
+  ] as const;
+
+  return {
+    id: `${prefix}-inside`,
+    name: { he: 'מה בפנים', en: 'What is inside' },
+    kind: 'includes',
+    minSelect: 0,
+    maxSelect: 99,
+    options: [
+      ...inside.map(([id, he, en]) => ({
+        id: `${prefix}-${id}`,
+        name: { he, en },
+        priceDeltaLkr: 0,
+        isDefault: true,
+        allowSide: true,
+        isAvailable: true,
+      })),
+      {
+        id: `${prefix}-egg`,
+        name: { he: 'ביצה קשה', en: 'Hard-boiled egg' },
+        priceDeltaLkr: 400,
+        isDefault: false,
+        allowSide: false,
+        isAvailable: true,
+      },
+      {
+        id: `${prefix}-amba`,
+        name: { he: 'עמבה', en: 'Amba' },
+        priceDeltaLkr: 0,
+        isDefault: false,
+        allowSide: true,
+        isAvailable: true,
+      },
+    ],
+  };
+}
+
+function breadGroup(prefix: string): ModifierGroup {
+  return {
+    id: `${prefix}-bread`,
+    name: { he: 'לחם', en: 'Bread' },
+    kind: 'single',
+    minSelect: 1,
+    maxSelect: 1,
+    options: [
+      { id: `${prefix}-pita`,  name: { he: 'פיתה', en: 'Pita' },   priceDeltaLkr: 0,   isDefault: false, allowSide: false, isAvailable: true },
+      { id: `${prefix}-laffa`, name: { he: 'לאפה', en: 'Laffa' },  priceDeltaLkr: 300, isDefault: false, allowSide: false, isAvailable: true },
+      { id: `${prefix}-plate`, name: { he: 'במנה (בלי לחם)', en: 'On a plate' }, priceDeltaLkr: 0, isDefault: false, allowSide: false, isAvailable: true },
+    ],
+  };
+}
+
+const NO_MODS: ModifierGroup[] = [];
 
 /**
  * Local seed menu. The site runs on this until Supabase credentials are set,
@@ -23,7 +93,7 @@ export const SEED_MENU: MenuCategory[] = [
         priceLkr: 2400, imagePath: null, imageUrl: null,
         kosher: 'dairy', tags: ['vegetarian'], prepMinutes: 15, station: 'grill',
         isAvailable: true, stock: 'none', stockQty: null, dailyLimit: null,
-        soldToday: 0, sort: 1,
+        soldToday: 0, sort: 1, modifierGroups: NO_MODS,
       },
       {
         id: 'itm-israeli-breakfast',
@@ -33,7 +103,7 @@ export const SEED_MENU: MenuCategory[] = [
         priceLkr: 3100, imagePath: null, imageUrl: null,
         kosher: 'dairy', tags: [], prepMinutes: 20, station: 'cold',
         isAvailable: true, stock: 'daily_limit', stockQty: null, dailyLimit: 20,
-        soldToday: 17, sort: 2,
+        soldToday: 17, sort: 2, modifierGroups: NO_MODS,
       },
     ],
   },
@@ -52,6 +122,7 @@ export const SEED_MENU: MenuCategory[] = [
         kosher: 'pareve', tags: ['vegan'], prepMinutes: 10, station: 'grill',
         isAvailable: true, stock: 'none', stockQty: null, dailyLimit: null,
         soldToday: 0, sort: 1,
+        modifierGroups: [breadGroup('falafel'), saladGroup('falafel')],
       },
       {
         id: 'itm-fish-curry',
@@ -61,7 +132,7 @@ export const SEED_MENU: MenuCategory[] = [
         priceLkr: 3200, imagePath: null, imageUrl: null,
         kosher: 'pareve', tags: ['spicy'], prepMinutes: 25, station: 'grill',
         isAvailable: true, stock: 'count', stockQty: 6, dailyLimit: null,
-        soldToday: 4, sort: 2,
+        soldToday: 4, sort: 2, modifierGroups: NO_MODS,
       },
       {
         id: 'itm-schnitzel',
@@ -72,6 +143,18 @@ export const SEED_MENU: MenuCategory[] = [
         kosher: 'meat', tags: ['kids'], prepMinutes: 20, station: 'grill',
         isAvailable: false, stock: 'none', stockQty: null, dailyLimit: null,
         soldToday: 12, sort: 3,
+        modifierGroups: [breadGroup('schnitzel'), saladGroup('schnitzel')],
+      },
+      {
+        id: 'itm-shawarma',
+        categoryId: 'cat-mains',
+        name: { he: 'שווארמה בלאפה', en: 'Shawarma in laffa' },
+        description: { he: 'עוף, צ׳יפס בפנים, סלטים וטחינה', en: 'Chicken, chips inside, salads and tahini' },
+        priceLkr: 3900, imagePath: null, imageUrl: null,
+        kosher: 'meat', tags: [], prepMinutes: 12, station: 'grill',
+        isAvailable: true, stock: 'none', stockQty: null, dailyLimit: null,
+        soldToday: 0, sort: 0,
+        modifierGroups: [breadGroup('shawarma'), saladGroup('shawarma')],
       },
       {
         id: 'itm-hummus',
@@ -81,7 +164,7 @@ export const SEED_MENU: MenuCategory[] = [
         priceLkr: 1600, imagePath: null, imageUrl: null,
         kosher: 'pareve', tags: ['vegetarian'], prepMinutes: 8, station: 'cold',
         isAvailable: true, stock: 'none', stockQty: null, dailyLimit: null,
-        soldToday: 0, sort: 4,
+        soldToday: 0, sort: 4, modifierGroups: NO_MODS,
       },
     ],
   },
@@ -99,7 +182,7 @@ export const SEED_MENU: MenuCategory[] = [
         priceLkr: 900, imagePath: null, imageUrl: null,
         kosher: 'pareve', tags: ['vegan'], prepMinutes: 5, station: 'bar',
         isAvailable: true, stock: 'none', stockQty: null, dailyLimit: null,
-        soldToday: 0, sort: 1,
+        soldToday: 0, sort: 1, modifierGroups: NO_MODS,
       },
       {
         id: 'itm-king-coconut',
@@ -109,7 +192,7 @@ export const SEED_MENU: MenuCategory[] = [
         priceLkr: 500, imagePath: null, imageUrl: null,
         kosher: 'pareve', tags: ['vegan'], prepMinutes: 2, station: 'bar',
         isAvailable: true, stock: 'count', stockQty: 0, dailyLimit: null,
-        soldToday: 24, sort: 2,
+        soldToday: 24, sort: 2, modifierGroups: NO_MODS,
       },
     ],
   },

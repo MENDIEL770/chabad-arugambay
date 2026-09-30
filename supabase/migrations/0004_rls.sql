@@ -144,6 +144,8 @@ on conflict (id) do update
       file_size_limit = excluded.file_size_limit,
       allowed_mime_types = excluded.allowed_mime_types;
 
+-- Policies on storage.objects execute with search_path = storage, so calls
+-- into public must be schema-qualified or they fail at upload time.
 create policy menu_images_read on storage.objects
   for select using (bucket_id = 'menu');
 
@@ -154,19 +156,19 @@ create policy menu_images_write on storage.objects
   for insert to authenticated
   with check (
     bucket_id = 'menu'
-    and app_can(((storage.foldername(name))[1])::uuid, 'staff')
+    and public.app_can(((storage.foldername(name))[1])::uuid, 'staff')
   );
 
 create policy menu_images_update on storage.objects
   for update to authenticated
   using (
     bucket_id = 'menu'
-    and app_can(((storage.foldername(name))[1])::uuid, 'staff')
+    and public.app_can(((storage.foldername(name))[1])::uuid, 'staff')
   );
 
 create policy menu_images_delete on storage.objects
   for delete to authenticated
   using (
     bucket_id = 'menu'
-    and app_can(((storage.foldername(name))[1])::uuid, 'staff')
+    and public.app_can(((storage.foldername(name))[1])::uuid, 'staff')
   );
