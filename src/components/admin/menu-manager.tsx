@@ -7,6 +7,7 @@ import { isSellable } from '@/lib/data/types';
 import { formatLkr } from '@/lib/config';
 import { Icon } from '@/components/ui/icon';
 import { advanceOnEnter } from '@/lib/form-keyboard';
+import { ModifierEditor } from './modifier-editor';
 import {
   removeItemImage, restock, saveItem, toggleAvailability,
   type ActionResult,
@@ -279,6 +280,8 @@ function ItemRow({ item }: { item: MenuItem }) {
           </div>
         </form>
       )}
+
+      {open && <ModifierEditor itemId={item.id} groups={item.modifierGroups} />}
 
       <div className="px-4 pb-2">
         <Toast result={result} />
