@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { hasSupabase, TENANT } from '@/lib/config';
+import { getActor } from '@/lib/auth';
+import { signOut } from './login/actions';
 
 const MODULES = [
   { href: '/admin/events', label: 'אירועים' },
@@ -13,7 +15,8 @@ const MODULES = [
  * icon rail — the spec calls for the modules to be readable at a glance, and
  * there are only four of them.
  */
-export default function AdminLayout({ children }: LayoutProps<'/admin'>) {
+export default async function AdminLayout({ children }: LayoutProps<'/admin'>) {
+  const actor = hasSupabase() ? await getActor() : null;
   return (
     <div className="flex min-h-full flex-col">
       <header className="border-b border-line bg-bg">
@@ -38,9 +41,21 @@ export default function AdminLayout({ children }: LayoutProps<'/admin'>) {
             ))}
           </nav>
 
-          <Link href="/" className="btn btn-ghost btn-sm ms-auto max-[700px]:hidden">
-            לאתר
-          </Link>
+          <div className="ms-auto flex items-center gap-2.5">
+            {actor && (
+              <span className="chip max-[860px]:hidden">
+                <span className="ltr">{actor.email}</span> · {actor.role}
+              </span>
+            )}
+            <Link href="/" className="btn btn-ghost btn-sm max-[700px]:hidden">
+              לאתר
+            </Link>
+            {actor && (
+              <form action={signOut}>
+                <button type="submit" className="btn btn-ghost btn-sm">יציאה</button>
+              </form>
+            )}
+          </div>
         </div>
       </header>
 
