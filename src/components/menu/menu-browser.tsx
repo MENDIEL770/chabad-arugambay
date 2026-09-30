@@ -8,6 +8,7 @@ import {
   describeModifications, priceDelta, selectionKey, type Selection,
 } from '@/lib/data/modifiers';
 import { ItemSheet } from './item-sheet';
+import { CheckoutSheet } from './checkout-sheet';
 import { DishThumb } from './dish-thumb';
 
 type Fulfillment = 'delivery' | 'pickup' | 'dine_in';
@@ -35,6 +36,7 @@ export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
   const [fulfillment, setFulfillment] = useState<Fulfillment>('delivery');
   const [lines, setLines] = useState<CartLine[]>([]);
   const [editing, setEditing] = useState<MenuItem | null>(null);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   const itemsById = useMemo(
     () => new Map(categories.flatMap((c) => c.items).map((i) => [i.id, i])),
@@ -250,16 +252,32 @@ export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
                 </p>
               )}
 
-              <button type="button" className="btn btn-accent w-full justify-center" disabled>
+              <button
+                type="button"
+                className="btn btn-accent w-full justify-center"
+                onClick={() => setCheckingOut(true)}
+              >
                 להמשך הזמנה ({count})
               </button>
-              <p className="mt-2 text-center text-[.72rem] text-fg-subtle">
-                התשלום והשליחה למטבח מחוברים בשלב הבא
-              </p>
             </>
           )}
         </aside>
       </div>
+
+      {checkingOut && (
+        <CheckoutSheet
+          fulfillment={fulfillment}
+          total={total}
+          onClose={() => setCheckingOut(false)}
+          // Only ids, quantities and choices travel to the server; every
+          // price is rebuilt there from the menu table.
+          lines={priced.map((l) => ({
+            itemId: l.itemId,
+            qty: l.qty,
+            modifiers: Object.entries(l.selection).map(([id, state]) => ({ id, state })),
+          }))}
+        />
+      )}
 
       {editing && (
         <ItemSheet

@@ -32,6 +32,7 @@
    supabase/migrations/0003_restaurant.sql   ← 0004 תלוי בזה
    supabase/migrations/0004_rls.sql
    supabase/migrations/0005_hero.sql         ← תמונות רקע לדף הבית
+   supabase/migrations/0006_order_tracking.sql  ← הזמנות ומעקב
    supabase/seed.sql
    ```
 3. **Authentication → Users → Add user** — צרו משתמש עם המייל שלכם.
@@ -123,6 +124,14 @@ CNAME  www    cname.vercel-dns.com
 `/admin/settings/hero`.
 
 לקובץ הזה אין עברית, אז העברה דרך הלוח בטוחה עבורו.
+
+## הזמנות
+
+`0006_order_tracking.sql` מוסיף את `place_order()` ואת `order_tracking()`.
+**בלעדיו התפריט עובד אבל אי אפשר להזמין** — הלקוח מקבל הודעה מפורשת
+שההזמנות לא פעילות, לא שגיאת דאטהבייס.
+
+גם לקובץ הזה אין עברית, אז הלוח בטוח עבורו.
 
 ## מה עדיין לא מחובר
 

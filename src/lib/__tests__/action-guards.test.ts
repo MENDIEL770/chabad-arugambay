@@ -15,7 +15,15 @@ import { canAct } from '@/lib/roles';
  * This test fails if someone adds an action without a guard.
  */
 
-const MUTATING = /^(save|toggle|restock|upload|remove|create|delete|update|set|add)/i;
+/**
+ * Every exported action must EITHER call guarded() first, OR carry an
+ * explicit PUBLIC ACTION marker in the module explaining why it is open.
+ *
+ * An earlier version of this test matched a list of verbs instead, and
+ * `placeOrder` slipped straight through it — a mutating endpoint passing the
+ * security test on a naming technicality. Opt-out beats guesswork.
+ */
+const PUBLIC_MARKER = /PUBLIC ACTION/;
 
 function actionFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -41,9 +49,12 @@ describe('server actions authorise before acting', () => {
     ];
     expect(exported.length).toBeGreaterThan(0);
 
+    // A module may declare itself public; the marker must say why.
+    const isPublicModule = PUBLIC_MARKER.test(source);
+
     const unguarded: string[] = [];
     for (const [, name, , body] of exported) {
-      if (!MUTATING.test(name)) continue;
+      if (isPublicModule) continue;
       // signIn/signOut are the authentication surface itself.
       if (name === 'signIn' || name === 'signOut') continue;
       // First STATEMENT, not first line — a leading comment is fine.
@@ -60,9 +71,20 @@ describe('server actions authorise before acting', () => {
       unguarded,
       `These actions do not call guarded() as their first statement.\n` +
         `A Server Action can be POSTed to any route, so the proxy cannot ` +
-        `protect it, and these use the service-role client which bypasses RLS.\n\n` +
+        `protect it, and these use the service-role client which bypasses RLS.\n` +
+        `If an action is deliberately open, add a "PUBLIC ACTION" comment to ` +
+        `the module saying what protects it instead.\n\n` +
         unguarded.join('\n'),
     ).toEqual([]);
+  });
+
+  it('a public action module states what protects it instead', () => {
+    const source = readFileSync('src/app/menu/actions.ts', 'utf8');
+    expect(source).toMatch(/PUBLIC ACTION/);
+    // The three properties that stand in for authorisation.
+    expect(source).toMatch(/[Pp]rices are never taken from the client/);
+    expect(source).toMatch(/[Ss]ellability is re-checked/);
+    expect(source).toMatch(/rate limit/i);
   });
 
   it('guarded() authorises before it touches the database', () => {
