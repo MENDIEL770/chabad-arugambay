@@ -11,11 +11,13 @@
 1. פתחו פרויקט ב-[supabase.com](https://supabase.com) → **New project**.
    - Region: **Singapore** (`ap-southeast-1`) — הכי קרוב לסרי לנקה, חוסך ~200ms בכל בקשה.
    - שמרו את סיסמת ה-DB במקום בטוח.
-2. **SQL Editor** → הריצו לפי הסדר, כל קובץ בנפרד:
+2. **SQL Editor** → הריצו את `supabase/all.sql` (הכול בקובץ אחד, מוכן להדבקה).
+
+   אם משהו נכשל באמצע, הריצו במקום זאת קובץ-קובץ לפי הסדר, כדי לראות איפה:
    ```
    supabase/migrations/0001_core.sql
    supabase/migrations/0002_calendar.sql
-   supabase/migrations/0003_restaurant.sql
+   supabase/migrations/0003_restaurant.sql   ← 0004 תלוי בזה
    supabase/migrations/0004_rls.sql
    supabase/seed.sql
    ```
@@ -26,6 +28,20 @@
    - `Project URL`
    - `anon public`
    - `service_role` ← **סודי.** לא ב-Git, לא בצד לקוח, לא בוואטסאפ.
+
+### לבדוק מקומית לפני Vercel (מומלץ)
+
+```bash
+cd ~/chabad-arugambay && cp .env.example .env.local
+```
+
+מלאו את שלושת הערכים ב-`.env.local`, ואז:
+
+```bash
+npm run dev
+```
+
+אם הבאנר הכתום ב-`/admin` נעלם — החיבור עובד. זה חוסך גילוי תקלות אחרי פריסה.
 
 ## 2. Vercel (10 דק׳)
 
