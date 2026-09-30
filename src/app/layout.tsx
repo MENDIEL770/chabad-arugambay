@@ -1,3 +1,4 @@
+import { TENANT } from '@/lib/config';
 import type { Metadata } from 'next';
 import { Rubik, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
@@ -20,8 +21,14 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'בית חב״ד ארוגם ביי',
-  description: 'שבתות, חגים, מסעדה כשרה ומשלוחים בארוגם ביי, סרי לנקה.',
+  // Template so every page reads "<page> · בית חב״ד ארוגם ביי – סרי לנקה".
+  title: {
+    default: `${TENANT.name.he} – ${TENANT.region.he} · ${TENANT.tagline.he}`,
+    template: `%s · ${TENANT.name.he} – ${TENANT.region.he}`,
+  },
+  description:
+    'בית חב״ד ארוגם ביי, סרי לנקה — הבית שלך במזרח. סעודות שבת וחג, מסעדה כשרה, ' +
+    'משלוחים, והמלצות למטיילים.',
 };
 
 /**

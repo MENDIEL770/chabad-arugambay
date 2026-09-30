@@ -5,6 +5,7 @@ import { useRef, useState, useTransition } from 'react';
 import type { MenuCategory, MenuItem } from '@/lib/data/types';
 import { isSellable } from '@/lib/data/types';
 import { formatLkr } from '@/lib/config';
+import { Icon } from '@/components/ui/icon';
 import {
   removeItemImage, restock, saveItem, toggleAvailability,
   type ActionResult,
@@ -82,7 +83,10 @@ function ImageCell({ item, onResult }: { item: MenuItem; onResult: (r: ActionRes
             unoptimized={Boolean(preview)}
           />
         ) : (
-          <span className="text-[.7rem] leading-tight">העלו<br />תמונה</span>
+          <span className="flex flex-col items-center gap-1">
+            <Icon name="image" size={20} />
+            <span className="text-[.65rem] leading-none">העלו תמונה</span>
+          </span>
         )}
         {pending && (
           <span className="absolute inset-0 grid place-items-center bg-bg/70 text-[.7rem]">

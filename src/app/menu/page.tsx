@@ -8,7 +8,7 @@ import { MenuBrowser } from '@/components/menu/menu-browser';
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'התפריט · בית חב״ד ארוגם ביי',
+  title: 'התפריט',
   description: 'אוכל כשר בארוגם ביי — משלוח, איסוף או ישיבה במקום.',
 };
 

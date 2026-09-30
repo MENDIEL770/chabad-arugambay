@@ -37,11 +37,16 @@ export function SiteFooter() {
       <div className="wrap">
         <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr] gap-9 max-[820px]:grid-cols-2 max-[820px]:gap-7">
           <div>
-            <div className="mb-3.5 flex items-center gap-3 font-bold text-white">
-              <span className="grid size-[34px] place-items-center rounded-full bg-accent text-fg-on-accent">
+            <div className="mb-3.5 flex items-center gap-3 text-white">
+              <span className="grid size-[36px] place-items-center rounded-full bg-accent font-bold text-fg-on-accent">
                 ח
               </span>
-              {TENANT.name.he}
+              <span className="flex flex-col leading-tight">
+                <span className="font-bold">
+                  {TENANT.name.he} – {TENANT.region.he}
+                </span>
+                <span className="text-[.78rem] text-[#a8a4a6]">{TENANT.tagline.he}</span>
+              </span>
             </div>
             <p className="max-w-[34ch] text-sm leading-relaxed text-[#a8a4a6]">
               <span className="ltr">{TENANT.addressLine.en}, Sri Lanka.</span>
@@ -69,7 +74,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-9 flex flex-wrap justify-between gap-4 border-t border-white/10 pt-5 text-[.79rem] text-[#8e8a8c]">
-          <span>© תשפ״ז · {TENANT.name.he}</span>
+          <span>© תשפ״ז · {TENANT.name.he} – {TENANT.region.he}</span>
           <span className="ltr">Arugam Bay, Sri Lanka</span>
         </div>
       </div>

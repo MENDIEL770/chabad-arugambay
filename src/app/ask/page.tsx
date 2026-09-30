@@ -11,7 +11,7 @@ import { TENANT } from '@/lib/config';
 export const revalidate = 900;
 
 export const metadata: Metadata = {
-  title: 'שאלו אותנו · בית חב״ד ארוגם ביי',
+  title: 'שאלו אותנו',
   description: 'התשובות לשאלות שחוזרות — זמנים, מחירים, משלוחים, לינה.',
 };
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Icon } from '@/components/ui/icon';
 import {
   STAYS, TIPS, TIER_LABEL, type TravelTier,
 } from '@/lib/data/content';
@@ -87,8 +88,8 @@ export function TravelSearch() {
           <ul className="mb-9 grid grid-cols-3 gap-4 max-[900px]:grid-cols-2 max-[620px]:grid-cols-1">
             {stays.map((s) => (
               <li key={s.id} className="card flex gap-3.5 !p-4">
-                <span className="grid size-16 shrink-0 place-items-center rounded-xl bg-surface-sunk text-2xl" aria-hidden="true">
-                  {s.icon}
+                <span className="grid size-16 shrink-0 place-items-center rounded-xl bg-surface-sunk text-accent-strong">
+                  <Icon name={s.icon} size={26} />
                 </span>
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                   <b className="ltr text-[1rem] font-bold">{s.name}</b>
@@ -123,8 +124,8 @@ export function TravelSearch() {
           <ul className="grid grid-cols-2 gap-4 max-[760px]:grid-cols-1">
             {tips.map((t) => (
               <li key={t.id} className="card flex gap-3.5 !p-4">
-                <span className="grid size-11 shrink-0 place-items-center rounded-input bg-accent-soft text-xl" aria-hidden="true">
-                  {t.icon}
+                <span className="grid size-11 shrink-0 place-items-center rounded-input bg-accent-soft text-accent-strong">
+                  <Icon name={t.icon} size={20} />
                 </span>
                 <div className="flex min-w-0 flex-col gap-1">
                   <b className="font-medium">{t.title.he}</b>

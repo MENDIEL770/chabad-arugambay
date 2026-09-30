@@ -9,7 +9,7 @@ import { SiteFooter } from '@/components/site/site-footer';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'זמני היום · בית חב״ד ארוגם ביי',
+  title: 'זמני היום',
   description: 'זמני היום לשיטת אדמו״ר הזקן, מחושבים לארוגם ביי.',
 };
 

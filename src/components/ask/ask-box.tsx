@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Icon } from '@/components/ui/icon';
 import { useMemo, useState } from 'react';
 import {
   KB, describeDish, matchDish, searchKb,
@@ -56,7 +57,7 @@ export function AskBox({ facts, dishes }: { facts: KbFacts; dishes: DishFact[] }
             className="mt-3 inline-flex items-center gap-1.5 text-[.85rem] font-medium text-accent-strong hover:underline"
           >
             לתפריט ולהזמנה
-            <span aria-hidden="true">←</span>
+            <Icon name="arrow" size={14} />
           </Link>
         </div>
       )}
@@ -82,7 +83,7 @@ export function AskBox({ facts, dishes }: { facts: KbFacts; dishes: DishFact[] }
                   className="mt-3 inline-flex items-center gap-1.5 text-[.85rem] font-medium text-accent-strong hover:underline"
                 >
                   {entry.link.label}
-                  <span aria-hidden="true">←</span>
+                  <Icon name="arrow" size={14} />
                 </Link>
               )}
             </li>

@@ -4,7 +4,7 @@ import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
 import { TENANT } from '@/lib/config';
 
-export const metadata: Metadata = { title: 'תרומה · בית חב״ד ארוגם ביי' };
+export const metadata: Metadata = { title: 'תרומה' };
 
 const AMOUNTS = [50, 100, 180, 360, 1000];
 

@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { getHomeCalendar } from '@/lib/data/calendar';
 import { getMenu } from '@/lib/data/menu';
 import { isSellable } from '@/lib/data/types';
-import { formatLkr } from '@/lib/config';
+import { Icon } from '@/components/ui/icon';
+import { formatLkr, TENANT } from '@/lib/config';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
 import { TimesBoard } from '@/components/site/times-board';
@@ -40,6 +41,9 @@ export default async function HomePage() {
               <h1 className="mt-3.5 mb-4.5 text-balance text-[clamp(2.3rem,5.1vw,3.7rem)] font-bold leading-[1.1] tracking-[-.02em]">
                 {cal.next ? `${cal.next.title.he} בארוגם ביי` : 'שבת בארוגם ביי'}
               </h1>
+              <p className="mb-3 text-[1.02rem] font-medium text-accent-strong">
+                {TENANT.name.he} – {TENANT.region.he} · {TENANT.tagline.he}
+              </p>
               <p className="max-w-[47ch] text-[1.1rem] text-fg-muted">
                 סעודות על שפת הים, מקום לישון למי שצריך, ואוכל כשר כל השבוע.
                 כל מי שעובר בארוגם ביי מוזמן.
@@ -107,7 +111,7 @@ export default async function HomePage() {
                 עדכון בוואטסאפ בכל שלב — מהמטבח ועד שהנהג בדרך.
               </p>
               <div className="mt-4 flex items-center gap-3 rounded-card bg-accent-soft px-4.5 py-3.5 text-sm">
-                <span className="text-xl" aria-hidden="true">🛵</span>
+                <Icon name="scooter" size={21} className="shrink-0 text-accent-strong" />
                 <span>
                   משלוח לאזור ארוגם ביי: <b className="money">500 LKR</b> · בערך{' '}
                   <b className="money">35</b> דק׳ · משלמים לנהג במזומן
@@ -129,8 +133,8 @@ export default async function HomePage() {
                       sellable ? '' : 'opacity-55'
                     }`}
                   >
-                    <span className="grid size-[46px] shrink-0 place-items-center rounded-[11px] bg-accent-soft text-xl" aria-hidden="true">
-                      {item.kosher === 'meat' ? '🍗' : item.kosher === 'dairy' ? '🍳' : '🥙'}
+                    <span className="grid size-[46px] shrink-0 place-items-center rounded-[11px] bg-accent-soft text-accent-strong">
+                      <Icon name="dish" size={22} />
                     </span>
                     <span className="min-w-0 flex-1">
                       <b className="block font-medium">{item.name.he}</b>

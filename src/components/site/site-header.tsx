@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { StatusPill, type Closure } from './status-pill';
 import { ThemeToggle } from './theme-toggle';
 import { TENANT } from '@/lib/config';
+import { Icon } from '@/components/ui/icon';
 
 const NAV = [
   { href: '/shabbat', label: 'שבתות וחגים' },
@@ -25,11 +26,16 @@ export function SiteHeader({
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-bg/90 backdrop-blur-md">
       <div className="wrap flex h-[68px] items-center gap-5 max-[620px]:h-[62px] max-[620px]:gap-2.5">
-        <Link href="/" className="flex shrink-0 items-center gap-3 font-bold whitespace-nowrap">
-          <span className="grid size-[34px] place-items-center rounded-full bg-accent font-bold text-fg-on-accent max-[620px]:size-[30px]">
+        <Link href="/" className="flex shrink-0 items-center gap-3 whitespace-nowrap">
+          <span className="grid size-[36px] place-items-center rounded-full bg-accent font-bold text-fg-on-accent max-[620px]:size-[31px]">
             ח
           </span>
-          <span className="max-[620px]:text-[.92rem]">{TENANT.name.he}</span>
+          <span className="flex flex-col leading-tight">
+            <span className="font-bold max-[620px]:text-[.9rem]">{TENANT.name.he}</span>
+            <span className="text-[.7rem] text-fg-subtle max-[620px]:text-[.64rem]">
+              {TENANT.region.he} · {TENANT.tagline.he}
+            </span>
+          </span>
         </Link>
 
         <nav className="ms-2 flex gap-1 max-[940px]:hidden">
@@ -48,7 +54,7 @@ export function SiteHeader({
           <StatusPill initialOpen={statusOpen} initialLabel={statusLabel} closures={closures} />
           <ThemeToggle />
           <a className="btn btn-accent max-[620px]:px-4" href={wa} target="_blank" rel="noopener noreferrer">
-            <span aria-hidden="true">✆</span>
+            <Icon name="whatsapp" size={17} />
             <span className="max-[620px]:hidden">וואטסאפ</span>
           </a>
         </div>

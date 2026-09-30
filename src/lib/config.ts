@@ -11,6 +11,8 @@ export const TENANT = {
   id: TENANT_ID,
   slug: 'arugam-bay',
   name: { he: 'בית חב״ד ארוגם ביי', en: 'Chabad of Arugam Bay' },
+  region: { he: 'סרי לנקה', en: 'Sri Lanka' },
+  tagline: { he: 'הבית שלך במזרח', en: 'Your home in the East' },
   point: ARUGAM_BAY,
   zmanim: BAAL_HATANYA_ARUGAM_BAY,
   whatsapp: '+94771234567',

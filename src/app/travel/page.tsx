@@ -5,7 +5,7 @@ import { SiteFooter } from '@/components/site/site-footer';
 import { TravelSearch } from '@/components/travel/travel-search';
 
 export const metadata: Metadata = {
-  title: 'טיולים והמלצות · בית חב״ד ארוגם ביי',
+  title: 'טיולים והמלצות',
   description: 'איפה לישון ומה לעשות בארוגם ביי — המלצות ממי שגר כאן.',
 };
 

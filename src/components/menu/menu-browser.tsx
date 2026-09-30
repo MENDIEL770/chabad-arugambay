@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { MenuCategory, MenuItem } from '@/lib/data/types';
 import { isSellable } from '@/lib/data/types';
+import { Icon } from '@/components/ui/icon';
 import { formatLkr, lkrToIls } from '@/lib/config';
 import {
   describeModifications, priceDelta, selectionKey, type Selection,
@@ -130,8 +131,8 @@ export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
 
                   return (
                     <li key={item.id} className={`card flex gap-4 !p-4 ${sellable ? '' : 'opacity-60'}`}>
-                      <span className="grid size-[68px] shrink-0 place-items-center rounded-input bg-accent-soft text-2xl" aria-hidden="true">
-                        {item.kosher === 'meat' ? '🍗' : item.kosher === 'dairy' ? '🍳' : '🥗'}
+                      <span className="grid size-[68px] shrink-0 place-items-center rounded-input bg-accent-soft text-accent-strong">
+                        <Icon name="dish" size={26} />
                       </span>
 
                       <div className="flex min-w-0 flex-1 flex-col gap-1">

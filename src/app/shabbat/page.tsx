@@ -8,7 +8,7 @@ import type { Occasion } from '@/lib/calendar/occasions';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'שבתות וחגים · בית חב״ד ארוגם ביי',
+  title: 'שבתות וחגים',
   description: 'זמני הדלקת נרות וצאת השבת בארוגם ביי, והרשמה לסעודות.',
 };
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Icon } from '@/components/ui/icon';
 
 /**
  * Explicit viewer choice, overriding the OS preference.
@@ -37,7 +38,7 @@ export function ThemeToggle() {
       aria-label="החלף בין מצב בהיר לכהה"
       className="grid size-[38px] place-items-center rounded-full border border-line-strong text-fg hover:bg-surface max-[520px]:hidden"
     >
-      ◐
+      <Icon name="contrast" size={18} />
     </button>
   );
 }

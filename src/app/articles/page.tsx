@@ -3,9 +3,10 @@ import { getHomeCalendar } from '@/lib/data/calendar';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
 import { ARTICLES } from '@/lib/data/content';
+import { Icon } from '@/components/ui/icon';
 
 export const metadata: Metadata = {
-  title: 'מאמרים ומידע · בית חב״ד ארוגם ביי',
+  title: 'מאמרים ומידע',
   description: 'מדריכים ומידע למי שמגיע לארוגם ביי.',
 };
 
@@ -26,8 +27,8 @@ export default function ArticlesPage() {
           {ARTICLES.map((a) => (
             <li key={a.slug}>
               <article className="flex flex-col gap-2.5">
-                <span className="grid aspect-[16/10] place-items-center rounded-card border border-line bg-surface-sunk text-4xl" aria-hidden="true">
-                  {a.icon}
+                <span className="grid aspect-[16/10] place-items-center rounded-card border border-line bg-surface-sunk text-accent-strong">
+                  <Icon name={a.icon} size={38} strokeWidth={1.3} />
                 </span>
                 <h2 className="mt-1 text-[1.04rem] font-bold text-balance">{a.title.he}</h2>
                 <p className="text-[.88rem] text-fg-muted">{a.excerpt.he}</p>

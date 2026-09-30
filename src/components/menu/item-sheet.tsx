@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MenuItem } from '@/lib/data/types';
 import { formatLkr } from '@/lib/config';
+import { Icon } from '@/components/ui/icon';
 import {
   defaultSelection, defaultStateFor, describeModifications, priceDelta,
   validateSelection, type ModifierGroup, type ModifierOption,
@@ -188,7 +189,7 @@ export function ItemSheet({
             aria-label="סגור"
             className="grid size-9 shrink-0 place-items-center rounded-full border border-line-strong hover:bg-surface"
           >
-            ✕
+            <Icon name="x" size={17} />
           </button>
         </header>
 
