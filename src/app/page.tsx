@@ -9,6 +9,7 @@ import { SiteFooter } from '@/components/site/site-footer';
 import { TimesBoard } from '@/components/site/times-board';
 import { HeroSky } from '@/components/site/hero-sky';
 import { ServiceCards } from '@/components/site/service-cards';
+import { DishThumb } from '@/components/menu/dish-thumb';
 
 // Zmanim shift every day, so the page is rebuilt hourly rather than pinned.
 export const revalidate = 3600;
@@ -133,9 +134,7 @@ export default async function HomePage() {
                       sellable ? '' : 'opacity-55'
                     }`}
                   >
-                    <span className="grid size-[46px] shrink-0 place-items-center rounded-[11px] bg-accent-soft text-accent-strong">
-                      <Icon name="dish" size={22} />
-                    </span>
+                    <DishThumb src={item.imageUrl} alt={item.name.he} size={46} rounded="rounded-[11px]" />
                     <span className="min-w-0 flex-1">
                       <b className="block font-medium">{item.name.he}</b>
                       <span className="text-[.8rem] text-fg-subtle">{item.description.he}</span>

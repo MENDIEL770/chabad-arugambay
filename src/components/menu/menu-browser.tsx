@@ -3,12 +3,12 @@
 import { useMemo, useState } from 'react';
 import type { MenuCategory, MenuItem } from '@/lib/data/types';
 import { isSellable } from '@/lib/data/types';
-import { Icon } from '@/components/ui/icon';
 import { formatLkr, lkrToIls } from '@/lib/config';
 import {
   describeModifications, priceDelta, selectionKey, type Selection,
 } from '@/lib/data/modifiers';
 import { ItemSheet } from './item-sheet';
+import { DishThumb } from './dish-thumb';
 
 type Fulfillment = 'delivery' | 'pickup' | 'dine_in';
 
@@ -131,9 +131,7 @@ export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
 
                   return (
                     <li key={item.id} className={`card flex gap-4 !p-4 ${sellable ? '' : 'opacity-60'}`}>
-                      <span className="grid size-[68px] shrink-0 place-items-center rounded-input bg-accent-soft text-accent-strong">
-                        <Icon name="dish" size={26} />
-                      </span>
+                      <DishThumb src={item.imageUrl} alt={item.name.he} size={68} />
 
                       <div className="flex min-w-0 flex-1 flex-col gap-1">
                         <div className="flex items-start justify-between gap-2">
