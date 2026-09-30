@@ -1,7 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import { hasSupabase, TENANT_ID } from '@/lib/config';
 import { SEED_MENU } from './seed';
-import type { MenuCategory, MenuItem } from './types';
+import type { DishImage, MenuCategory, MenuItem } from './types';
 import type { ModifierGroup } from './modifiers';
 
 type Row = Record<string, unknown>;
@@ -36,6 +36,7 @@ function toItem(
   r: Row,
   publicUrl: (p: string) => string,
   groups: ModifierGroup[],
+  images: DishImage[],
 ): MenuItem {
   const path = (r.image_path as string | null) ?? null;
   return {
@@ -57,6 +58,7 @@ function toItem(
     soldToday: (r.sold_today as number) ?? 0,
     sort: (r.sort as number) ?? 0,
     modifierGroups: groups,
+    images,
   };
 }
 
@@ -102,6 +104,17 @@ export async function getMenu(): Promise<MenuCategory[]> {
 
   if (oErr) throw new Error(`Could not load modifier options: ${oErr.message}`);
 
+  /**
+   * Photos live in their own table since 0009. It may not be applied yet,
+   * in which case the menu falls back to the single image_path it already
+   * had rather than failing to render at all.
+   */
+  const { data: photos } = await sb
+    .from('menu_item_images')
+    .select('id, item_id, storage_path, alt, sort')
+    .eq('tenant_id', TENANT_ID)
+    .order('sort');
+
   const publicUrl = (p: string) => sb.storage.from('menu').getPublicUrl(p).data.publicUrl;
 
   return (cats ?? []).map((c) => ({
@@ -111,12 +124,25 @@ export async function getMenu(): Promise<MenuCategory[]> {
     isActive: c.is_active as boolean,
     items: (items ?? [])
       .filter((i) => i.category_id === c.id)
-      .map((i) =>
-        toItem(
+      .map((i) => {
+        const own = (photos ?? []).filter((p) => p.item_id === i.id);
+        const images: DishImage[] =
+          own.length > 0
+            ? own.map((p) => ({
+                id: p.id as string,
+                url: publicUrl(p.storage_path as string),
+                alt: (p.alt ?? {}) as DishImage['alt'],
+              }))
+            : i.image_path
+              ? [{ id: `legacy-${i.id}`, url: publicUrl(i.image_path as string), alt: { he: '', en: '' } }]
+              : [];
+
+        return toItem(
           i as Row,
           publicUrl,
           toGroups((groups ?? []) as Row[], (options ?? []) as Row[], i.id as string),
-        ),
-      ),
+          images,
+        );
+      }),
   }));
 }

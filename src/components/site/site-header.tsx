@@ -6,6 +6,7 @@ import { Icon } from '@/components/ui/icon';
 
 const NAV = [
   { href: '/shabbat', label: 'שבתות וחגים' },
+  { href: '/whats-on', label: 'מה קורה' },
   { href: '/menu', label: 'המסעדה' },
   { href: '/travel', label: 'טיולים והמלצות' },
   { href: '/articles', label: 'מאמרים' },

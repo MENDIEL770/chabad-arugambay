@@ -2,6 +2,12 @@ import type { ModifierGroup } from './modifiers';
 
 export interface I18n { he: string; en: string }
 
+export interface DishImage {
+  id: string;
+  url: string;
+  alt: I18n;
+}
+
 export type KosherType = 'meat' | 'dairy' | 'pareve';
 export type StockMode = 'none' | 'count' | 'daily_limit';
 export type Station = 'grill' | 'cold' | 'bar' | 'bakery';
@@ -26,6 +32,8 @@ export interface MenuItem {
   sort: number;
   /** Removable defaults, choices and paid extras. Empty for a simple dish. */
   modifierGroups: ModifierGroup[];
+  /** Every photo of the dish, in order. The first is the card thumbnail. */
+  images: DishImage[];
 }
 
 export interface MenuCategory {

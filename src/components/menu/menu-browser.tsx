@@ -9,7 +9,7 @@ import {
 } from '@/lib/data/modifiers';
 import { ItemSheet } from './item-sheet';
 import { CheckoutSheet } from './checkout-sheet';
-import { DishThumb } from './dish-thumb';
+import { DishGallery } from './dish-gallery';
 
 type Fulfillment = 'delivery' | 'pickup' | 'dine_in';
 
@@ -132,10 +132,13 @@ export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
                   const customisable = item.modifierGroups.length > 0;
 
                   return (
-                    <li key={item.id} className={`card flex gap-4 !p-4 ${sellable ? '' : 'opacity-60'}`}>
-                      <DishThumb src={item.imageUrl} alt={item.name.he} size={68} />
+                    <li
+                      key={item.id}
+                      className={`card overflow-hidden !p-0 ${sellable ? '' : 'opacity-60'}`}
+                    >
+                      <DishGallery images={item.images} alt={item.name.he} />
 
-                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <div className="flex min-w-0 flex-1 flex-col gap-1 p-4">
                         <div className="flex items-start justify-between gap-2">
                           <b className="font-medium">{item.name.he}</b>
                           <span className="money text-[.92rem]">{formatLkr(item.priceLkr)}</span>

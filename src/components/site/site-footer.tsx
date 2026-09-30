@@ -8,6 +8,7 @@ const COLUMNS = [
       { href: '/shabbat', label: 'השבת הקרובה' },
       { href: '/shabbat', label: 'חגי השנה' },
       { href: '/zmanim', label: 'זמני היום' },
+      { href: '/whats-on', label: 'מה קורה בבית' },
       { href: '/donate', label: 'תרומה' },
     ],
   },

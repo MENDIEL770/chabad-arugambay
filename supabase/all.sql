@@ -1628,6 +1628,117 @@ end $$;
 
 revoke all on function post_comment(uuid, uuid, text, text, text) from public;
 
+-- ============ supabase/migrations/0009_dish_photos.sql ============
+
+-- 0009_dish_photos.sql — several photos per dish, not one.
+
+create table menu_item_images (
+  id         uuid primary key default gen_random_uuid(),
+  tenant_id  uuid not null references tenants(id) on delete cascade,
+  item_id    uuid not null references menu_items(id) on delete cascade,
+
+  storage_path text not null,
+  alt          jsonb not null default '{}'::jsonb,
+
+  sort       int not null default 0,
+  width_px   int,
+  height_px  int,
+  bytes      int,
+  created_at timestamptz not null default now()
+);
+
+create index on menu_item_images (item_id, sort);
+
+alter table menu_item_images enable row level security;
+
+-- Visible wherever the dish is visible.
+create policy dish_images_read_public on menu_item_images
+  for select using (
+    exists (
+      select 1 from menu_items i
+      join menu_categories c on c.id = i.category_id
+      where i.id = menu_item_images.item_id and c.is_active
+    )
+  );
+
+create policy dish_images_write on menu_item_images
+  for all using (app_can(tenant_id, 'staff'))
+  with check (app_can(tenant_id, 'staff'));
+
+/**
+ * Carry the existing single photo over as the first image, so nothing that
+ * was already uploaded disappears when the menu starts reading from here.
+ * menu_items.image_path stays as the thumbnail for lists.
+ */
+insert into menu_item_images (tenant_id, item_id, storage_path, sort)
+select tenant_id, id, image_path, 0
+  from menu_items
+ where image_path is not null
+on conflict do nothing;
+
+-- ============ supabase/migrations/0010_happenings.sql ============
+
+-- 0010_happenings.sql — the noticeboard: classes, farbrengens, announcements.
+
+create type happening_kind  as enum ('class','farbrengen','notice','event');
+create type happening_cycle as enum ('once','weekly','monthly');
+
+create table happenings (
+  id         uuid primary key default gen_random_uuid(),
+  tenant_id  uuid not null references tenants(id) on delete cascade,
+
+  kind       happening_kind  not null default 'class',
+  cycle      happening_cycle not null default 'weekly',
+
+  title      jsonb not null,
+  details    jsonb not null default '{}'::jsonb,
+  audience   jsonb not null default '{}'::jsonb,   -- "לגברים", "לכל המשפחה"
+  location   jsonb not null default '{}'::jsonb,
+
+  /** weekly: 0=Sunday … 6=Saturday. Null for one-off. */
+  weekday    int check (weekday between 0 and 6),
+  /** monthly: nth weekday, e.g. 1 = first Tuesday. */
+  week_of_month int check (week_of_month between 1 and 5),
+  /** once: the actual date. */
+  on_date    date,
+
+  starts_at  time,
+  ends_at    time,
+
+  /**
+   * Times that follow the sun rather than the clock: a class "after mincha"
+   * moves every week. Stored as an offset from a zman so the board is right
+   * without anyone editing it.
+   */
+  anchor     text,                                  -- 'candle_lighting' | 'sunset' | 'tzeis' | null
+  anchor_offset_min int not null default 0,
+
+  is_active  boolean not null default true,
+  /** Paused for the season rather than deleted — Arugam Bay empties out
+   *  between November and March and the classes come back. */
+  paused_note jsonb not null default '{}'::jsonb,
+
+  sort       int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+
+  constraint weekly_needs_weekday  check (cycle <> 'weekly'  or weekday is not null),
+  constraint monthly_needs_weekday check (cycle <> 'monthly' or (weekday is not null and week_of_month is not null)),
+  constraint once_needs_date       check (cycle <> 'once'    or on_date is not null),
+  constraint has_a_time            check (starts_at is not null or anchor is not null)
+);
+
+create index on happenings (tenant_id, sort) where is_active;
+
+create trigger t_happenings_touch before update on happenings
+  for each row execute function touch_updated_at();
+
+alter table happenings enable row level security;
+
+create policy happenings_read_public on happenings for select using (is_active);
+create policy happenings_write on happenings
+  for all using (app_can(tenant_id, 'staff')) with check (app_can(tenant_id, 'staff'));
+
 -- ============ supabase/seed.sql ============
 
 -- seed.sql — the Arugam Bay tenant, its settings, hours, and a starting menu.

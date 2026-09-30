@@ -6,7 +6,6 @@ import { isSellable } from '@/lib/data/types';
 import { formatLkr, TENANT } from '@/lib/config';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
-import { TimesBoard } from '@/components/site/times-board';
 import { HeroSky } from '@/components/site/hero-sky';
 import { HeroCarousel } from '@/components/site/hero-carousel';
 import { ServiceCards } from '@/components/site/service-cards';
@@ -104,22 +103,12 @@ export default async function HomePage() {
         ) : (
           <section className="relative overflow-hidden border-b border-line">
             <HeroSky />
-            <div className="wrap relative grid grid-cols-[1.15fr_.85fr] items-center gap-13 pt-19 pb-21 max-[900px]:grid-cols-1 max-[900px]:gap-9 max-[900px]:pt-13 max-[900px]:pb-15">
+            <div className="wrap relative pt-19 pb-21 max-[900px]:pt-13 max-[900px]:pb-15">
               <HeroCopy cal={cal} />
-              {cal.next && <TimesBoard occasion={cal.next} />}
             </div>
           </section>
         )}
 
-        {/* With a photo backdrop the board would sit on top of the image and
-            lose its contrast, so it moves to its own band underneath. */}
-        {slides.length > 0 && cal.next && (
-          <section className="border-b border-line bg-surface py-12">
-            <div className="wrap max-w-[620px]">
-              <TimesBoard occasion={cal.next} />
-            </div>
-          </section>
-        )}
 
         <section className="py-18">
           <div className="wrap">

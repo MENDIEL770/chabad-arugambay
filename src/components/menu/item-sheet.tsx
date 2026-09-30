@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MenuItem } from '@/lib/data/types';
 import { formatLkr } from '@/lib/config';
 import { Icon } from '@/components/ui/icon';
+import { DishGallery } from './dish-gallery';
 import {
   defaultSelection, defaultStateFor, describeModifications, priceDelta,
   validateSelection, type ModifierGroup, type ModifierOption,
@@ -193,7 +194,11 @@ export function ItemSheet({
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-5">
+        <div className="flex-1 overflow-y-auto">
+          {item.images.length > 0 && (
+            <DishGallery images={item.images} alt={item.name.he} className="border-b border-line" />
+          )}
+          <div className="p-5">
           {groups.map((g) => {
             const err = showErrors ? errors.find((e) => e.groupId === g.id) : undefined;
             return (
@@ -256,6 +261,7 @@ export function ItemSheet({
               </section>
             );
           })}
+          </div>
         </div>
 
         <footer className="border-t border-line p-5">
