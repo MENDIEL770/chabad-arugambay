@@ -31,6 +31,7 @@
    supabase/migrations/0002_calendar.sql
    supabase/migrations/0003_restaurant.sql   ← 0004 תלוי בזה
    supabase/migrations/0004_rls.sql
+   supabase/migrations/0005_hero.sql         ← תמונות רקע לדף הבית
    supabase/seed.sql
    ```
 3. **Authentication → Users → Add user** — צרו משתמש עם המייל שלכם.
@@ -114,6 +115,14 @@ CNAME  www    cname.vercel-dns.com
 **הזמנים זזים בדקה או שתיים** — הכיול מתועד ב-`README.md`. לא באג בפריסה.
 
 ---
+
+## תמונות רקע לדף הבית
+
+`0005_hero.sql` יוצר את הטבלה ואת ה-bucket. **בלעדיו דף הבית עדיין עובד** —
+הוא נופל בחזרה לרקע מצויר ורושם אזהרה בלוג. אחרי שהוא רץ, הניהול נמצא ב-
+`/admin/settings/hero`.
+
+לקובץ הזה אין עברית, אז העברה דרך הלוח בטוחה עבורו.
 
 ## מה עדיין לא מחובר
 
