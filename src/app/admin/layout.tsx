@@ -8,6 +8,7 @@ const MODULES = [
   { href: '/admin/restaurant/menu', label: 'מסעדה' },
   { href: '/admin/orders', label: 'הזמנות' },
   { href: '/admin/settings', label: 'הגדרות' },
+  { href: '/admin/settings/hero', label: 'תמונות רקע' },
 ];
 
 /**

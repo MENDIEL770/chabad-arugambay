@@ -1,26 +1,92 @@
 import Link from 'next/link';
-import { getHomeCalendar } from '@/lib/data/calendar';
+import { getHomeCalendar, type HomeCalendar } from '@/lib/data/calendar';
 import { getMenu } from '@/lib/data/menu';
+import { getHeroSlides } from '@/lib/data/hero';
 import { isSellable } from '@/lib/data/types';
-import { Icon } from '@/components/ui/icon';
 import { formatLkr, TENANT } from '@/lib/config';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
 import { TimesBoard } from '@/components/site/times-board';
 import { HeroSky } from '@/components/site/hero-sky';
+import { HeroCarousel } from '@/components/site/hero-carousel';
 import { ServiceCards } from '@/components/site/service-cards';
 import { DishThumb } from '@/components/menu/dish-thumb';
+import { Icon } from '@/components/ui/icon';
 
-// Zmanim shift every day, so the page is rebuilt hourly rather than pinned.
 export const revalidate = 3600;
+
+/**
+ * The page's own hero copy.
+ *
+ * Shown on the drawn backdrop when there are no photos, and as the default
+ * inside the carousel — a slide that carries its own headline replaces it
+ * while that slide is on screen.
+ */
+function HeroCopy({ cal, onImage = false }: { cal: HomeCalendar; onImage?: boolean }) {
+  // Over a photograph the text needs its own contrast; on the plain backdrop
+  // it should use the normal palette so dark mode still works.
+  const tone = onImage
+    ? { title: 'text-white', lede: 'text-white/85', meta: 'text-white/70', rule: 'border-white/25' }
+    : { title: '', lede: 'text-fg-muted', meta: 'text-fg-subtle', rule: 'border-line' };
+
+  return (
+    <div className={onImage ? 'max-w-[52ch] drop-shadow-[0_2px_18px_rgb(0_0_0/.45)]' : undefined}>
+      <p className={`eyebrow ${onImage ? '!text-white/70' : ''}`}>
+        {cal.today.hebrewDate.he}
+        {cal.today.holiday && ` · ${cal.today.holiday.he}`}
+      </p>
+
+      <h1
+        className={`mt-3.5 mb-4.5 text-balance text-[clamp(2.3rem,5.1vw,3.7rem)] font-bold leading-[1.1] tracking-[-.02em] ${tone.title}`}
+      >
+        {cal.next ? `${cal.next.title.he} בארוגם ביי` : 'שבת בארוגם ביי'}
+      </h1>
+
+      <p className={`mb-3 text-[1.02rem] font-medium ${onImage ? 'text-accent' : 'text-accent-strong'}`}>
+        {TENANT.name.he} – {TENANT.region.he} · {TENANT.tagline.he}
+      </p>
+
+      <p className={`max-w-[47ch] text-[1.1rem] ${tone.lede}`}>
+        סעודות על שפת הים, מקום לישון למי שצריך, ואוכל כשר כל השבוע.
+        כל מי שעובר בארוגם ביי מוזמן.
+      </p>
+
+      <div className="mt-7.5 flex flex-wrap gap-3 max-[560px]:flex-col max-[560px]:items-stretch">
+        <Link href="/shabbat" className="btn btn-accent btn-lg max-[560px]:justify-center">
+          {cal.next?.kind === 'shabbat' ? 'הרשמה לשבת' : 'הרשמה לחג'}
+        </Link>
+        <Link
+          href="/menu"
+          className={`btn btn-lg max-[560px]:justify-center ${
+            onImage
+              ? 'border-white/40 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20'
+              : 'btn-ghost'
+          }`}
+        >
+          לתפריט המסעדה
+        </Link>
+      </div>
+
+      <dl className={`mt-8.5 flex flex-wrap gap-6.5 border-t pt-6 ${tone.rule}`}>
+        {[
+          { t: 'הדלקת נרות', v: cal.next?.candleLighting.toFormat('HH:mm') ?? '—' },
+          { t: 'צאת השבת/חג', v: cal.next?.havdalah.toFormat('HH:mm') ?? '—' },
+          { t: 'שקיעה היום', v: cal.today.zmanim.sunset.toFormat('HH:mm') },
+        ].map((x) => (
+          <div key={x.t} className="flex flex-col gap-0.5">
+            <dt className={`order-2 text-[.79rem] ${tone.meta}`}>{x.t}</dt>
+            <dd className={`clock order-1 text-[1.28rem] font-bold ${tone.title}`}>{x.v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
 
 export default async function HomePage() {
   const cal = getHomeCalendar();
-  const menu = await getMenu();
-
-  const highlights = menu
-    .flatMap((c) => c.items)
-    .slice(0, 4);
+  const [menu, slides] = await Promise.all([getMenu(), getHeroSlides()]);
+  const highlights = menu.flatMap((c) => c.items).slice(0, 4);
 
   return (
     <>
@@ -31,59 +97,29 @@ export default async function HomePage() {
       />
 
       <main className="flex-1">
-        <section className="relative overflow-hidden border-b border-line">
-          <HeroSky />
-          <div className="wrap relative grid grid-cols-[1.15fr_.85fr] items-center gap-13 pt-19 pb-21 max-[900px]:grid-cols-1 max-[900px]:gap-9 max-[900px]:pt-13 max-[900px]:pb-15">
-            <div>
-              <p className="eyebrow">
-                {cal.today.hebrewDate.he}
-                {cal.today.holiday && ` · ${cal.today.holiday.he}`}
-              </p>
-              <h1 className="mt-3.5 mb-4.5 text-balance text-[clamp(2.3rem,5.1vw,3.7rem)] font-bold leading-[1.1] tracking-[-.02em]">
-                {cal.next ? `${cal.next.title.he} בארוגם ביי` : 'שבת בארוגם ביי'}
-              </h1>
-              <p className="mb-3 text-[1.02rem] font-medium text-accent-strong">
-                {TENANT.name.he} – {TENANT.region.he} · {TENANT.tagline.he}
-              </p>
-              <p className="max-w-[47ch] text-[1.1rem] text-fg-muted">
-                סעודות על שפת הים, מקום לישון למי שצריך, ואוכל כשר כל השבוע.
-                כל מי שעובר בארוגם ביי מוזמן.
-              </p>
-
-              <div className="mt-7.5 flex flex-wrap gap-3 max-[560px]:flex-col max-[560px]:items-stretch">
-                <Link href="/shabbat" className="btn btn-accent btn-lg max-[560px]:justify-center">
-                  {cal.next?.kind === 'shabbat' ? 'הרשמה לשבת' : 'הרשמה לחג'}
-                </Link>
-                <Link href="/menu" className="btn btn-ghost btn-lg max-[560px]:justify-center">
-                  לתפריט המסעדה
-                </Link>
-              </div>
-
-              <dl className="mt-8.5 flex flex-wrap gap-6.5 border-t border-line pt-6">
-                <div className="flex flex-col gap-0.5">
-                  <dt className="order-2 text-[.79rem] text-fg-subtle">הדלקת נרות</dt>
-                  <dd className="clock order-1 text-[1.28rem] font-bold">
-                    {cal.next?.candleLighting.toFormat('HH:mm') ?? '—'}
-                  </dd>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <dt className="order-2 text-[.79rem] text-fg-subtle">צאת השבת/חג</dt>
-                  <dd className="clock order-1 text-[1.28rem] font-bold">
-                    {cal.next?.havdalah.toFormat('HH:mm') ?? '—'}
-                  </dd>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <dt className="order-2 text-[.79rem] text-fg-subtle">שקיעה היום</dt>
-                  <dd className="clock order-1 text-[1.28rem] font-bold">
-                    {cal.today.zmanim.sunset.toFormat('HH:mm')}
-                  </dd>
-                </div>
-              </dl>
+        {slides.length > 0 ? (
+          <HeroCarousel slides={slides}>
+            <HeroCopy cal={cal} onImage />
+          </HeroCarousel>
+        ) : (
+          <section className="relative overflow-hidden border-b border-line">
+            <HeroSky />
+            <div className="wrap relative grid grid-cols-[1.15fr_.85fr] items-center gap-13 pt-19 pb-21 max-[900px]:grid-cols-1 max-[900px]:gap-9 max-[900px]:pt-13 max-[900px]:pb-15">
+              <HeroCopy cal={cal} />
+              {cal.next && <TimesBoard occasion={cal.next} />}
             </div>
+          </section>
+        )}
 
-            {cal.next && <TimesBoard occasion={cal.next} />}
-          </div>
-        </section>
+        {/* With a photo backdrop the board would sit on top of the image and
+            lose its contrast, so it moves to its own band underneath. */}
+        {slides.length > 0 && cal.next && (
+          <section className="border-b border-line bg-surface py-12">
+            <div className="wrap max-w-[620px]">
+              <TimesBoard occasion={cal.next} />
+            </div>
+          </section>
+        )}
 
         <section className="py-18">
           <div className="wrap">
@@ -134,7 +170,12 @@ export default async function HomePage() {
                       sellable ? '' : 'opacity-55'
                     }`}
                   >
-                    <DishThumb src={item.imageUrl} alt={item.name.he} size={46} rounded="rounded-[11px]" />
+                    <DishThumb
+                      src={item.imageUrl}
+                      alt={item.name.he}
+                      size={46}
+                      rounded="rounded-[11px]"
+                    />
                     <span className="min-w-0 flex-1">
                       <b className="block font-medium">{item.name.he}</b>
                       <span className="text-[.8rem] text-fg-subtle">{item.description.he}</span>
