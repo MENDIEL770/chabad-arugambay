@@ -9,7 +9,8 @@
 ## 1. Supabase (15 דק׳)
 
 1. פתחו פרויקט ב-[supabase.com](https://supabase.com) → **New project**.
-   - Region: **Singapore** (`ap-southeast-1`) — הכי קרוב לסרי לנקה, חוסך ~200ms בכל בקשה.
+   - Region: **South Asia (Mumbai)** (`ap-south-1`) — הקרוב ביותר לסרי לנקה:
+     קולומבו–מומבאי ~1,500 ק״מ מול ~2,900 לסינגפור.
    - שמרו את סיסמת ה-DB במקום בטוח.
 2. **SQL Editor** → הריצו את `supabase/all.sql` (הכול בקובץ אחד, מוכן להדבקה).
 
