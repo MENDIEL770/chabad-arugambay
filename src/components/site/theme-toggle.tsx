@@ -1,26 +1,33 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-/** Explicit viewer choice, persisted, overriding the OS preference. */
+/**
+ * Explicit viewer choice, overriding the OS preference.
+ *
+ * The saved theme is applied by an inline script in the document head before
+ * first paint (see layout.tsx), not from an effect here — an effect runs
+ * after paint, so a viewer who chose dark would see a white flash on every
+ * navigation.
+ */
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'light' || saved === 'dark') {
-      setTheme(saved);
-      document.documentElement.dataset.theme = saved;
-    }
-  }, []);
+  // Nothing is read during render: the DOM already carries the answer, and
+  // reading it here would differ between server and client.
+  const [, force] = useState(0);
 
   function toggle() {
+    const root = document.documentElement;
     const current =
-      theme ?? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      root.dataset.theme ??
+      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     const next = current === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    document.documentElement.dataset.theme = next;
-    localStorage.setItem('theme', next);
+    root.dataset.theme = next;
+    try {
+      localStorage.setItem('theme', next);
+    } catch {
+      // Private mode or blocked storage: the choice just will not persist.
+    }
+    force((n) => n + 1);
   }
 
   return (

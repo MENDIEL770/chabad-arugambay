@@ -24,6 +24,12 @@ export const metadata: Metadata = {
   description: 'שבתות, חגים, מסעדה כשרה ומשלוחים בארוגם ביי, סרי לנקה.',
 };
 
+/**
+ * Applies the saved theme before the first paint. Inline and synchronous on
+ * purpose: anything deferred lets the wrong theme show for a frame.
+ */
+const THEME_BOOTSTRAP = `try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light'){document.documentElement.dataset.theme=t}}catch(e){}`;
+
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html
@@ -31,7 +37,10 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       dir="rtl"
       className={`${rubik.variable} ${mono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-bg text-fg">{children}</body>
+      <body className="min-h-full flex flex-col bg-bg text-fg">
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
+        {children}
+      </body>
     </html>
   );
 }

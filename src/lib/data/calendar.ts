@@ -73,3 +73,17 @@ export function getHomeCalendar(now = DateTime.now().setZone(TENANT.point.timezo
     })),
   };
 }
+
+/**
+ * Upcoming shabbat and yom tov blocks, for the listing page and (later) the
+ * generator that keeps N registration forms open ahead of time.
+ */
+export function getUpcomingOccasions(count = 24, now = DateTime.now().setZone(TENANT.point.timezone)) {
+  // A week per occasion plus slack for chag clusters, so we always have
+  // enough candidates to return `count` of them.
+  const to = now.plus({ weeks: count + 4 }).toISODate()!;
+  const days = buildDays(TENANT.point, TENANT.zmanim, now.minus({ days: 2 }).toISODate()!, to);
+  return buildOccasions(days)
+    .filter((o) => o.havdalah > now)
+    .slice(0, count);
+}
