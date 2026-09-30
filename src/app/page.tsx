@@ -35,15 +35,27 @@ function HeroCopy({ cal, onImage = false }: { cal: HomeCalendar; onImage?: boole
         {cal.today.holiday && ` · ${cal.today.holiday.he}`}
       </p>
 
+      {/* The house is the headline. The upcoming chag is news, and news
+          belongs under the name of the place, not instead of it. */}
       <h1
-        className={`mt-3.5 mb-4.5 text-balance text-[clamp(2.3rem,5.1vw,3.7rem)] font-bold leading-[1.1] tracking-[-.02em] ${tone.title}`}
+        className={`mt-3.5 text-balance text-[clamp(2.1rem,4.6vw,3.3rem)] font-bold leading-[1.12] tracking-[-.02em] ${tone.title}`}
       >
-        {cal.next ? `${cal.next.title.he} בארוגם ביי` : 'שבת בארוגם ביי'}
+        {TENANT.name.he} – {TENANT.region.he}
       </h1>
 
-      <p className={`mb-3 text-[1.02rem] font-medium ${onImage ? 'text-accent' : 'text-accent-strong'}`}>
-        {TENANT.name.he} – {TENANT.region.he} · {TENANT.tagline.he}
+      <p
+        className={`mt-2 mb-5 text-[clamp(1.15rem,2.4vw,1.6rem)] font-medium ${
+          onImage ? 'text-accent' : 'text-accent-strong'
+        }`}
+      >
+        {TENANT.tagline.he}
       </p>
+
+      {cal.next && (
+        <p className={`mb-3 text-[1.02rem] font-medium ${tone.title}`}>
+          הקרוב: {cal.next.title.he}
+        </p>
+      )}
 
       <p className={`max-w-[47ch] text-[1.1rem] ${tone.lede}`}>
         סעודות על שפת הים, מקום לישון למי שצריך, ואוכל כשר כל השבוע.

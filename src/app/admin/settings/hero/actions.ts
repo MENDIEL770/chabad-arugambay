@@ -56,16 +56,15 @@ export async function uploadHeroSlide(formData: FormData): Promise<ActionResult>
       return { ok: false, message: `פורמט לא נתמך. ${HERO_IMAGE_SPEC.formatLabel}.` };
     }
 
-    // Dimensions are measured in the browser and sent along; the server
-    // cannot decode the image without pulling in an image library.
+    /**
+     * Dimensions used to be measured in the browser and posted along. That
+     * needed a promise created outside an event handler, and the admin page
+     * was failing in production with React #441 — which is exactly what
+     * that produces. The width guidance is now advisory text next to the
+     * field instead; an undersized hero looks soft, it does not break.
+     */
     const width = Number(formData.get('width')) || null;
     const height = Number(formData.get('height')) || null;
-    if (width && width < HERO_IMAGE_SPEC.minWidth) {
-      return {
-        ok: false,
-        message: `התמונה צרה מדי (${width}px). צריך לפחות ${HERO_IMAGE_SPEC.minWidth}px רוחב.`,
-      };
-    }
 
     const sb = db();
     const ext = file.type.split('/')[1].replace('jpeg', 'jpg');

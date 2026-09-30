@@ -25,49 +25,45 @@ function Toast({ result }: { result: ActionResult | null }) {
   );
 }
 
+/**
+ * Plain form, no client-side work.
+ *
+ * The previous version measured the image in the browser before posting,
+ * which meant creating a promise during a transition — the likely source of
+ * the React #441 this page was failing with in production. Simpler is worth
+ * more here than a pre-flight dimension check.
+ */
 function Uploader({ onResult }: { onResult: (r: ActionResult) => void }) {
   const [pending, start] = useTransition();
-  const ref = useRef<HTMLInputElement>(null);
-
-  function pick(file: File) {
-    // Measure in the browser: the server would need an image library to
-    // decode this, and we want to reject a too-small image before upload.
-    const url = URL.createObjectURL(file);
-    const img = new window.Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const fd = new FormData();
-      fd.set('image', file);
-      fd.set('width', String(img.naturalWidth));
-      fd.set('height', String(img.naturalHeight));
-      start(async () => onResult(await uploadHeroSlide(fd)));
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      onResult({ ok: false, message: 'לא הצלחנו לקרוא את הקובץ כתמונה.' });
-    };
-    img.src = url;
-  }
+  const inputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   return (
-    <div className="card">
+    <form
+      ref={formRef}
+      className="card"
+      action={(fd) => start(async () => onResult(await uploadHeroSlide(fd)))}
+    >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="font-bold">הוספת תמונת רקע</h2>
           <ul className="mt-2 flex flex-col gap-1 text-[.82rem] text-fg-muted">
             <li>
-              מומלץ <b className="money">{HERO_IMAGE_SPEC.recommendedWidth}×{HERO_IMAGE_SPEC.recommendedHeight}</b>{' '}
-              פיקסלים (יחס {HERO_IMAGE_SPEC.aspect}) — רוחב לרוחב מסך בלי מתיחה.
+              מומלץ{' '}
+              <b className="money">
+                {HERO_IMAGE_SPEC.recommendedWidth}×{HERO_IMAGE_SPEC.recommendedHeight}
+              </b>{' '}
+              פיקסלים (יחס {HERO_IMAGE_SPEC.aspect}).
             </li>
             <li>
-              מינימום <b className="money">{HERO_IMAGE_SPEC.minWidth}px</b> רוחב. צר מזה ייראה מטושטש במסך גדול.
+              מינימום <b className="money">{HERO_IMAGE_SPEC.minWidth}px</b> רוחב — צר מזה
+              ייראה רך במסך גדול.
             </li>
             <li>
               עד <b className="money">{(HERO_IMAGE_SPEC.maxBytes / 1024 / 1024).toFixed(0)}MB</b>,
-              אבל כדאי מתחת ל-<b className="money">{Math.round(HERO_IMAGE_SPEC.warnBytes / 1024)}KB</b> —
-              בסרי לנקה הרשת איטית.
+              רצוי מתחת ל-<b className="money">{Math.round(HERO_IMAGE_SPEC.warnBytes / 1024)}KB</b>.
             </li>
-            <li>{HERO_IMAGE_SPEC.formatLabel}. WebP שוקל כשליש מ-JPEG באותה איכות.</li>
+            <li>{HERO_IMAGE_SPEC.formatLabel}</li>
           </ul>
         </div>
 
@@ -75,7 +71,7 @@ function Uploader({ onResult }: { onResult: (r: ActionResult) => void }) {
           type="button"
           className="btn btn-accent"
           disabled={pending}
-          onClick={() => ref.current?.click()}
+          onClick={() => inputRef.current?.click()}
         >
           <Icon name="image" size={17} />
           {pending ? 'מעלה…' : 'בחרו תמונה'}
@@ -83,17 +79,14 @@ function Uploader({ onResult }: { onResult: (r: ActionResult) => void }) {
       </div>
 
       <input
-        ref={ref}
+        ref={inputRef}
+        name="image"
         type="file"
         accept={HERO_IMAGE_SPEC.formats.join(',')}
         className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) pick(f);
-          e.target.value = '';
-        }}
+        onChange={() => formRef.current?.requestSubmit()}
       />
-    </div>
+    </form>
   );
 }
 

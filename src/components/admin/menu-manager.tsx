@@ -1,16 +1,14 @@
 'use client';
 
-import Image from 'next/image';
-import { useRef, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import type { MenuCategory, MenuItem } from '@/lib/data/types';
 import { isSellable } from '@/lib/data/types';
 import { formatLkr } from '@/lib/config';
-import { Icon } from '@/components/ui/icon';
 import { advanceOnEnter } from '@/lib/form-keyboard';
 import { ModifierEditor } from './modifier-editor';
+import { DishImages } from './dish-images';
 import {
-  removeItemImage, restock, saveItem, toggleAvailability,
-  type ActionResult,
+  restock, saveItem, toggleAvailability, type ActionResult,
 } from '@/app/admin/restaurant/menu/actions';
 
 const KOSHER = [
@@ -46,82 +44,6 @@ function Toast({ result }: { result: ActionResult | null }) {
   );
 }
 
-function ImageCell({ item, onResult }: { item: MenuItem; onResult: (r: ActionResult) => void }) {
-  const [pending, start] = useTransition();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-
-  function pick(file: File) {
-    // Show the chosen file immediately; the upload replaces it on success.
-    setPreview(URL.createObjectURL(file));
-    const fd = new FormData();
-    fd.set('id', item.id);
-    fd.set('image', file);
-    start(async () => {
-      const r = await (await import('@/app/admin/restaurant/menu/actions')).uploadItemImage(fd);
-      onResult(r);
-      if (!r.ok) setPreview(null);
-    });
-  }
-
-  const src = preview ?? item.imageUrl;
-
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={pending}
-        aria-label={`החלף תמונה ל${item.name.he}`}
-        className="relative grid size-[72px] place-items-center overflow-hidden rounded-input border border-dashed border-line-strong bg-surface text-fg-subtle transition-colors hover:border-accent hover:bg-accent-soft disabled:opacity-50"
-      >
-        {src ? (
-          <Image
-            src={src}
-            alt=""
-            fill
-            sizes="72px"
-            className="object-cover"
-            unoptimized={Boolean(preview)}
-          />
-        ) : (
-          <span className="flex flex-col items-center gap-1">
-            <Icon name="image" size={20} />
-            <span className="text-[.65rem] leading-none">העלו תמונה</span>
-          </span>
-        )}
-        {pending && (
-          <span className="absolute inset-0 grid place-items-center bg-bg/70 text-[.7rem]">
-            מעלה…
-          </span>
-        )}
-      </button>
-
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/avif"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) pick(f);
-          e.target.value = '';
-        }}
-      />
-
-      {item.imageUrl && (
-        <button
-          type="button"
-          className="text-[.7rem] text-fg-subtle underline hover:text-danger"
-          onClick={() => start(async () => onResult(await removeItemImage(item.id)))}
-        >
-          הסר
-        </button>
-      )}
-    </div>
-  );
-}
-
 function ItemRow({ item }: { item: MenuItem }) {
   const [open, setOpen] = useState(false);
   const [result, setResult] = useState<ActionResult | null>(null);
@@ -131,8 +53,8 @@ function ItemRow({ item }: { item: MenuItem }) {
 
   return (
     <li className="border-b border-line last:border-b-0">
-      <div className="flex items-center gap-4 px-4 py-3">
-        <ImageCell item={item} onResult={setResult} />
+      <div className="flex items-start gap-4 px-4 py-3">
+        <DishImages itemId={item.id} images={item.images} onResult={setResult} />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
