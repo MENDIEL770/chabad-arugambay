@@ -63,6 +63,9 @@ const OrderSchema = z
     address: z.string().trim().max(300).optional(),
     addressNotes: z.string().trim().max(300).optional(),
     tableNo: z.string().trim().max(20).optional(),
+    /** Dropped pin. Worth more than the address line here. */
+    lat: z.number().min(-90).max(90).optional(),
+    lng: z.number().min(-180).max(180).optional(),
     payMethod: z.enum(['cash_lkr_to_driver', 'cash_lkr_at_counter']),
     lines: z.array(LineSchema).min(1, 'העגלה ריקה').max(60),
   })
@@ -143,6 +146,8 @@ export async function placeOrder(input: OrderInput): Promise<PlaceOrderResult> {
       modifiers: l.modifiers,
       note: l.note ?? null,
     })),
+    p_lat: v.lat ?? null,
+    p_lng: v.lng ?? null,
     p_delivery_fee: v.fulfillment === 'delivery' ? DELIVERY_FEE_LKR : 0,
   });
 

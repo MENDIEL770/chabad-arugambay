@@ -1,10 +1,20 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/icon';
+import { PhoneField } from '@/components/ui/phone-field';
 import { formatLkr } from '@/lib/config';
 import { placeOrder, type OrderInput } from '@/app/menu/actions';
+import { advanceOnEnter, digitsOnlyInput } from '@/lib/form-keyboard';
+import type { PickedPoint } from '@/components/ui/map-picker';
+
+/** A map library is a lot of JavaScript for someone who only wants pickup. */
+const MapPicker = dynamic(
+  () => import('@/components/ui/map-picker').then((m) => m.MapPicker),
+  { ssr: false },
+);
 
 type Fulfillment = 'delivery' | 'pickup' | 'dine_in';
 
@@ -34,6 +44,8 @@ export function CheckoutSheet({
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [point, setPoint] = useState<PickedPoint | null>(null);
+  const [mapOpen, setMapOpen] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -60,6 +72,8 @@ export function CheckoutSheet({
       addressNotes: String(formData.get('addressNotes') ?? '') || undefined,
       tableNo: String(formData.get('tableNo') ?? '') || undefined,
       payMethod: String(formData.get('payMethod') ?? '') as OrderInput['payMethod'],
+      lat: point?.lat,
+      lng: point?.lng,
       lines,
     });
 
@@ -82,6 +96,7 @@ export function CheckoutSheet({
     >
       <form
         action={submit}
+        onKeyDown={advanceOnEnter}
         role="dialog"
         aria-modal="true"
         aria-label="פרטי ההזמנה"
@@ -114,20 +129,7 @@ export function CheckoutSheet({
             <input className="field" name="name" required minLength={2} autoComplete="name" />
           </label>
 
-          <label>
-            <span className="label">טלפון (וואטסאפ)</span>
-            <input
-              className="field ltr"
-              name="phone"
-              type="tel"
-              required
-              placeholder="+94771234567"
-              autoComplete="tel"
-            />
-            <span className="mt-1 block text-[.75rem] text-fg-subtle">
-              עם קידומת מדינה. לשם נשלח את עדכוני ההזמנה.
-            </span>
-          </label>
+          <PhoneField hint="לשם נשלח את עדכוני ההזמנה." />
 
           {fulfillment === 'delivery' && (
             <>
@@ -139,13 +141,52 @@ export function CheckoutSheet({
                 <span className="label">איך למצוא אתכם (לא חובה)</span>
                 <input className="field" name="addressNotes" placeholder="מול הסופר, קומה 2" />
               </label>
+
+              {/* In Arugam Bay a pin beats an address: lanes are unnamed and
+                  half the guesthouses share a name. */}
+              <div>
+                <span className="label">סימון על המפה</span>
+                <button
+                  type="button"
+                  onClick={() => setMapOpen(true)}
+                  className={`flex w-full items-center gap-3 rounded-input border px-3.5 py-3 text-start transition-colors ${
+                    point
+                      ? 'border-accent bg-accent-soft'
+                      : 'border-line-strong hover:bg-surface'
+                  }`}
+                >
+                  <Icon name="map" size={19} className="shrink-0 text-accent-strong" />
+                  <span className="min-w-0 flex-1">
+                    <b className="block text-[.9rem] font-medium">
+                      {point ? 'המיקום סומן' : 'פתחו מפה וסמנו בדיוק'}
+                    </b>
+                    {point ? (
+                      <span className="money text-[.75rem] text-fg-subtle">
+                        {point.lat.toFixed(5)}, {point.lng.toFixed(5)}
+                      </span>
+                    ) : (
+                      <span className="text-[.75rem] text-fg-subtle">
+                        עוזר לנהג להגיע ישר אליכם
+                      </span>
+                    )}
+                  </span>
+                  {point && <span className="chip chip-kosher">שונה</span>}
+                </button>
+              </div>
             </>
           )}
 
           {fulfillment === 'dine_in' && (
             <label>
               <span className="label">מספר שולחן</span>
-              <input className="field" name="tableNo" required inputMode="numeric" />
+              <input
+                className="field"
+                name="tableNo"
+                required
+                inputMode="numeric"
+                pattern="[0-9]*"
+                onInput={digitsOnlyInput}
+              />
             </label>
           )}
 
@@ -195,6 +236,14 @@ export function CheckoutSheet({
           </button>
         </footer>
       </form>
+
+      {mapOpen && (
+        <MapPicker
+          value={point}
+          onChange={setPoint}
+          onClose={() => setMapOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { DateTime } from 'luxon';
+import Link from 'next/link';
 import { getHomeCalendar, getUpcomingOccasions } from '@/lib/data/calendar';
+import { getOpenEvents } from '@/lib/data/events';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
 import type { Occasion } from '@/lib/calendar/occasions';
@@ -31,6 +33,16 @@ function DayRange({ o }: { o: Occasion }) {
 export default async function ShabbatPage() {
   const cal = getHomeCalendar();
   const occasions = getUpcomingOccasions(24);
+  const events = await getOpenEvents();
+
+  /**
+   * Match each occasion to its registration form by occasion key.
+   *
+   * The list is built from the calendar, not the events table, so a shabbat
+   * always appears with correct times even before a form exists for it.
+   * The button only becomes a link once there is something to link to.
+   */
+  const formFor = new Map(events.map((e) => [`${e.startsOn}`, e.slug]));
   const [next, ...rest] = occasions;
 
   return (
@@ -61,7 +73,13 @@ export default async function ShabbatPage() {
               </span>
               <h2 className="text-xl font-bold">{next.title.he}</h2>
               <DayRange o={next} />
-              <a href="#" className="btn btn-accent btn-sm ms-auto">להרשמה</a>
+              {formFor.has(next.startDate) ? (
+                <Link href={`/f/${formFor.get(next.startDate)}`} className="btn btn-accent btn-sm ms-auto">
+                  להרשמה
+                </Link>
+              ) : (
+                <span className="chip ms-auto">ההרשמה תיפתח בקרוב</span>
+              )}
             </div>
 
             <dl className="grid grid-cols-4 gap-px bg-accent/25 max-[700px]:grid-cols-2">
@@ -113,7 +131,13 @@ export default async function ShabbatPage() {
                 </div>
               </div>
 
-              <a href="#" className="btn btn-ghost btn-sm">להרשמה</a>
+              {formFor.has(o.startDate) ? (
+                <Link href={`/f/${formFor.get(o.startDate)}`} className="btn btn-ghost btn-sm">
+                  להרשמה
+                </Link>
+              ) : (
+                <span className="chip">בקרוב</span>
+              )}
             </li>
           ))}
         </ul>

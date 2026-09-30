@@ -68,6 +68,8 @@ create or replace function place_order(
   p_table_no     text,
   p_pay_method   payment_method,
   p_lines        jsonb,          -- [{item_id, qty, modifiers:[{id,state}], note}]
+  p_lat          double precision,
+  p_lng          double precision,
   p_delivery_fee int
 )
 returns table (order_id uuid, order_code text, track_token text, total int)
@@ -164,13 +166,13 @@ begin
   insert into orders (
     tenant_id, code, channel, fulfillment, table_no,
     customer_name, customer_phone, customer_lang,
-    address_text, address_notes,
+    address_text, address_notes, address_lat, address_lng,
     items, subtotal_lkr, delivery_fee_lkr, total_lkr,
     pay_method, pay_status, status, track_token, timeline
   ) values (
     p_tenant, v_code, p_channel, p_fulfillment, p_table_no,
     p_name, p_phone, p_lang,
-    p_address, p_address_notes,
+    p_address, p_address_notes, p_lat, p_lng,
     v_snapshot, v_subtotal,
     case when p_fulfillment = 'delivery' then greatest(coalesce(p_delivery_fee,0),0) else 0 end,
     v_total,
@@ -189,4 +191,5 @@ begin
 end $$;
 
 revoke all on function place_order(uuid, order_channel, fulfillment, text, text,
-  lang_code, text, text, text, payment_method, jsonb, int) from public;
+  lang_code, text, text, text, payment_method, jsonb,
+  double precision, double precision, int) from public;

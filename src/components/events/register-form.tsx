@@ -3,8 +3,10 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/icon';
+import { PhoneField } from '@/components/ui/phone-field';
 import type { EventRecord } from '@/lib/data/events';
 import { register, type RegisterInput } from '@/app/f/[slug]/actions';
+import { advanceOnEnter } from '@/lib/form-keyboard';
 
 const DONATIONS = [0, 50, 100, 180, 360];
 const STEPS = ['סעודות', 'פרטים', 'אישור'] as const;
@@ -73,7 +75,7 @@ export function RegisterForm({ event }: { event: EventRecord }) {
   }
 
   return (
-    <form action={submit} className="mx-auto max-w-[620px]">
+    <form action={submit} onKeyDown={advanceOnEnter} className="mx-auto max-w-[620px]">
       <ol className="mb-8 flex gap-2" aria-label="שלבי ההרשמה">
         {STEPS.map((s, i) => (
           <li key={s} className="flex flex-1 flex-col gap-1.5">
@@ -111,9 +113,13 @@ export function RegisterForm({ event }: { event: EventRecord }) {
                     >
                       <span className="min-w-0 flex-1">
                         {t.name.he}
-                        <span className="money ms-2 text-[.82rem] text-fg-subtle">
-                          {t.priceIls > 0 ? `${t.priceIls} ₪` : 'ללא תשלום'}
-                        </span>
+                        {t.priceIls > 0 ? (
+                          <span className="ms-2 text-[.82rem] text-fg-subtle">
+                            <span className="money">{t.priceIls}</span> ₪
+                          </span>
+                        ) : (
+                          <span className="ms-2 text-[.82rem] text-fg-subtle">ללא תשלום</span>
+                        )}
                       </span>
                       <div className="flex shrink-0 items-center gap-1.5">
                         <button
@@ -169,16 +175,7 @@ export function RegisterForm({ event }: { event: EventRecord }) {
             <span className="label">שם מלא</span>
             <input className="field" name="name" required={step === 1} minLength={2} />
           </label>
-          <label>
-            <span className="label">טלפון (וואטסאפ)</span>
-            <input
-              className="field ltr"
-              name="phone"
-              type="tel"
-              required={step === 1}
-              placeholder="+972501234567"
-            />
-          </label>
+          <PhoneField required={step === 1} hint="לשם נשלח את אישור ההרשמה." />
           <label>
             <span className="label">מייל (לא חובה)</span>
             <input className="field ltr" name="email" type="email" />

@@ -73,9 +73,19 @@ export function SiteFooter() {
           ))}
         </div>
 
-        <div className="mt-9 flex flex-wrap justify-between gap-4 border-t border-white/10 pt-5 text-[.79rem] text-[#8e8a8c]">
+        <div className="mt-9 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-5 text-[.79rem] text-[#8e8a8c]">
           <span>© תשפ״ז · {TENANT.name.he} – {TENANT.region.he}</span>
-          <span className="ltr">Arugam Bay, Sri Lanka</span>
+          <span className="flex items-center gap-4">
+            <span className="ltr">Arugam Bay, Sri Lanka</span>
+            {/* Deliberately quiet: staff know it is here, visitors have no
+                reason to notice it. */}
+            <Link
+              href="/admin"
+              className="rounded-pill border border-white/15 px-3 py-1 text-[.74rem] transition-colors hover:border-accent hover:text-accent"
+            >
+              כניסת צוות
+            </Link>
+          </span>
         </div>
       </div>
     </footer>

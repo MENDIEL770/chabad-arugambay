@@ -6,6 +6,7 @@ import type { MenuCategory, MenuItem } from '@/lib/data/types';
 import { isSellable } from '@/lib/data/types';
 import { formatLkr } from '@/lib/config';
 import { Icon } from '@/components/ui/icon';
+import { advanceOnEnter } from '@/lib/form-keyboard';
 import {
   removeItemImage, restock, saveItem, toggleAvailability,
   type ActionResult,
@@ -185,6 +186,7 @@ function ItemRow({ item }: { item: MenuItem }) {
         <form
           className="grid grid-cols-4 gap-3 border-t border-line bg-surface px-4 py-4 max-[900px]:grid-cols-2 max-[560px]:grid-cols-1"
           action={(fd) => start(async () => setResult(await saveItem(fd)))}
+          onKeyDown={advanceOnEnter}
         >
           <input type="hidden" name="id" value={item.id} />
 
