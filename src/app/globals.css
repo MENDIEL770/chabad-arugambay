@@ -48,6 +48,9 @@
   /* elevation — PickMe leans on surface contrast, not heavy shadow */
   --shadow-card:  0 1px 2px rgb(33 31 32 / 0.04), 0 8px 24px rgb(33 31 32 / 0.06);
   --shadow-float: 0 8px 16px rgb(33 31 32 / 0.08), 0 24px 48px rgb(33 31 32 / 0.10);
+
+  /* hero backdrop strength, dimmer on dark ground */
+  --sky-opacity: .5;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -62,6 +65,7 @@
     --line:         #322f37;
     --line-strong:  #45414b;
     --accent-soft:  #3a2c12;
+    --sky-opacity:  .25;
   }
 }
 
@@ -71,12 +75,12 @@
 :root[data-theme="dark"] {
   --bg: #17161a; --surface: #201f24; --surface-sunk: #1a191d; --ink-panel: #0f0e11;
   --fg: #ececf0; --fg-muted: #a9a6ad; --fg-subtle: #837f88;
-  --line: #322f37; --line-strong: #45414b; --accent-soft: #3a2c12;
+  --line: #322f37; --line-strong: #45414b; --accent-soft: #3a2c12; --sky-opacity: .25;
 }
 :root[data-theme="light"] {
   --bg: #ffffff; --surface: #f4f8fb; --surface-sunk: #eef3f8; --ink-panel: #211f20;
   --fg: #212529; --fg-muted: #666365; --fg-subtle: #858284;
-  --line: #e4e9ef; --line-strong: #cdd5de; --accent-soft: #fff4e0;
+  --line: #e4e9ef; --line-strong: #cdd5de; --accent-soft: #fff4e0; --sky-opacity: .5;
 }
 
 @theme inline {
@@ -133,4 +137,75 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Component layer. Only patterns that repeat and are awkward as utility
+   strings live here; everything else stays in Tailwind at the call site.
+--------------------------------------------------------------------------- */
+@layer components {
+  .wrap { max-width: 1180px; margin-inline: auto; padding-inline: 20px; }
+
+  .eyebrow {
+    font-size: .72rem; font-weight: 500; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--fg-subtle);
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 22px; border-radius: var(--r-pill);
+    font-size: .92rem; font-weight: 500; border: 1px solid transparent;
+    cursor: pointer; transition: transform .12s, background .15s, box-shadow .15s;
+    white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-accent { background: var(--accent); color: var(--fg-on-accent); }
+  .btn-accent:hover { background: var(--accent-strong); box-shadow: var(--shadow-card); }
+  .btn-ghost { background: transparent; border-color: var(--line-strong); color: var(--fg); }
+  .btn-ghost:hover { background: var(--surface); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-lg { padding: 14px 28px; font-size: 1rem; }
+  .btn-sm { padding: 7px 14px; font-size: .84rem; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .hero-sky { opacity: var(--sky-opacity); }
+
+  .card {
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: var(--r-card); padding: 24px;
+  }
+
+  .chip {
+    display: inline-block; font-size: .68rem; font-weight: 500;
+    padding: 3px 9px; border-radius: var(--r-pill);
+    background: var(--surface); border: 1px solid var(--line);
+    color: var(--fg-muted); letter-spacing: .02em; white-space: nowrap;
+  }
+  .chip-kosher { background: var(--accent-soft); border-color: transparent; color: #8a5f11; }
+  .chip-out { background: #fbe9e5; border-color: transparent; color: var(--danger); }
+  @media (prefers-color-scheme: dark) {
+    .chip-kosher { color: var(--accent); }
+    .chip-out { background: #40211b; }
+  }
+  :root[data-theme="dark"] .chip-kosher { color: var(--accent); }
+  :root[data-theme="dark"] .chip-out { background: #40211b; }
+
+  .field {
+    width: 100%; padding: 11px 14px; border-radius: var(--r-input);
+    border: 1px solid var(--line-strong); background: var(--bg); color: var(--fg);
+    font-family: inherit; font-size: .94rem;
+  }
+  .field:focus { outline: 3px solid var(--accent-strong); outline-offset: 1px; }
+  .label { display: block; font-size: .8rem; font-weight: 500; color: var(--fg-muted); margin-bottom: 6px; }
+
+  /* Money and clock times: never let digits reflow the layout. */
+  .money, .clock {
+    font-family: var(--font-mono-ui), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums; font-weight: 500;
+    direction: ltr; unicode-bidi: isolate; white-space: nowrap;
+  }
+}
+
+:where(a, button, input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--accent-strong); outline-offset: 2px; border-radius: 4px;
 }
