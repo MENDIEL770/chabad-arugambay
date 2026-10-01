@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { hasSupabase, TENANT_ID } from '@/lib/config';
 import { NotAuthorized, requireRole } from '@/lib/auth';
 import type { AppRole } from '@/lib/roles';
+import { knownChoices } from '@/lib/data/meal-choices';
 
 export interface ActionResult {
   ok: boolean;
@@ -91,6 +92,8 @@ const MealSchema = z.object({
   servesAt: z.string().trim().default(''),
   capacity: z.string().trim().default(''),
   isOpen: z.string().optional(),
+  /** 'inherit' | 'custom'. Anything else is treated as inherit. */
+  choiceMode: z.string().trim().default('inherit'),
 });
 
 export async function saveMeal(formData: FormData): Promise<ActionResult> {
@@ -127,6 +130,14 @@ export async function saveMeal(formData: FormData): Promise<ActionResult> {
         serves_at: v.servesAt ? new Date(v.servesAt).toISOString() : null,
         capacity,
         is_open: v.isOpen === 'on',
+        // Three states, not two. null inherits the template; an array —
+        // including an empty one — is this meal's own answer. Collapsing
+        // empty into null would turn "do not ask at lunch" back into
+        // "ask whatever the template says".
+        meal_choices:
+          v.choiceMode === 'custom'
+            ? knownChoices(formData.getAll('mealChoices').map(String))
+            : null,
       })
       .eq('id', v.id)
       .eq('tenant_id', TENANT_ID);

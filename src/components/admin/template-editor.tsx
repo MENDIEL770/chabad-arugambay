@@ -6,6 +6,7 @@ import { runAction } from '@/lib/run-action';
 import {
   saveEventTemplate, type ActionResult, type TemplateInput,
 } from '@/app/admin/events/template-actions';
+import { MEAL_CHOICES } from '@/lib/data/meal-choices';
 
 const KINDS = [
   { v: 'adult', l: 'מבוגר' },
@@ -65,6 +66,7 @@ export function TemplateEditor({ template }: { template: EventTemplate }) {
       askNationality: t.askNationality,
       askNotes: t.askNotes,
       askParticipants: t.askParticipants,
+      mealChoices: t.mealChoices,
       donationAmounts: t.donationAmounts,
       weeksAhead: t.weeksAhead,
       closesHoursBefore: t.closesHoursBefore,
@@ -214,7 +216,45 @@ export function TemplateEditor({ template }: { template: EventTemplate }) {
               onChange={(e) => setT({ ...t, closesHoursBefore: Number(e.target.value || 0) })}
             />
           </label>
-          <label className="col-span-2 max-[700px]:col-span-1">
+          <fieldset className="mb-4">
+          <legend className="label !mb-1">בחירת מנה מיוחדת</legend>
+          <p className="mb-2 text-[.78rem] text-fg-subtle">
+            מה להציע לכל משתתף. בלי סימון אף אחד — השאלה לא נשאלת בכלל.
+            אפשר לשנות זאת גם לסעודה בודדת, בעריכת אירוע.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {MEAL_CHOICES.map((c) => {
+              const on = t.mealChoices.includes(c.key);
+              return (
+                <label
+                  key={c.key}
+                  className={`cursor-pointer rounded-input border px-3 py-1.5 text-[.84rem] ${
+                    on
+                      ? 'border-accent bg-accent-soft text-accent-strong'
+                      : 'border-line text-fg-muted hover:border-accent/50'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    onChange={(e) =>
+                      setT({
+                        ...t,
+                        mealChoices: e.target.checked
+                          ? [...t.mealChoices, c.key]
+                          : t.mealChoices.filter((k) => k !== c.key),
+                      })
+                    }
+                    className="sr-only"
+                  />
+                  {c.label.he}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <label className="col-span-2 max-[700px]:col-span-1">
             <span className="label !mb-1">סכומי תרומה מוצעים (מופרדים בפסיק)</span>
             <input
               className="field money ltr"

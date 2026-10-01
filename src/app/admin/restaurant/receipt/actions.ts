@@ -6,7 +6,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { hasSupabase, TENANT_ID } from '@/lib/config';
 import { NotAuthorized, requireRole } from '@/lib/auth';
 import type { AppRole } from '@/lib/roles';
-import { RECEIPT_IMAGE_SPEC } from '@/lib/spec/receipt-image';
+import { RECEIPT_IMAGE_SPEC, explainFormat } from '@/lib/spec/receipt-image';
 
 export interface ActionResult {
   ok: boolean;
@@ -100,9 +100,11 @@ export async function uploadReceiptImage(formData: FormData): Promise<ActionResu
     if (file.size > RECEIPT_IMAGE_SPEC.maxBytes) {
       return { ok: false, message: 'התמונה גדולה מ-2MB.' };
     }
-    if (!(RECEIPT_IMAGE_SPEC.formats as readonly string[]).includes(file.type)) {
-      return { ok: false, message: `פורמט לא נתמך. ${RECEIPT_IMAGE_SPEC.formatLabel}.` };
-    }
+    // Names the actual type. Storage rejects before the app sees the file,
+    // so a generic refusal left no way to tell an SVG logo from an iPhone
+    // HEIC — the two things people actually try.
+    const why = explainFormat(file.type, file.name);
+    if (why) return { ok: false, message: why };
 
     const sb = createServiceClient();
     const ext = file.type.split('/')[1].replace('jpeg', 'jpg');
@@ -111,7 +113,17 @@ export async function uploadReceiptImage(formData: FormData): Promise<ActionResu
     const { error: upErr } = await sb.storage
       .from('receipt')
       .upload(key, file, { contentType: file.type, upsert: false });
-    if (upErr) return { ok: false, message: `ההעלאה נכשלה: ${upErr.message}` };
+    if (upErr) {
+      // The bucket keeps its own allow-list and refuses first; say so
+      // rather than echoing "mime type not supported" at a shliach.
+      if (/mime|content type/i.test(upErr.message)) {
+        return {
+          ok: false,
+          message: `האחסון דחה את הפורמט ${file.type}. אם הריצו את 0023_receipt_formats.sql, נסו שוב; אחרת שמרו כ-PNG.`,
+        };
+      }
+      return { ok: false, message: `ההעלאה נכשלה: ${upErr.message}` };
+    }
 
     // Read the old key first so it can be removed only after the row points
     // at the new one — a failure in between must not leave a blank receipt.

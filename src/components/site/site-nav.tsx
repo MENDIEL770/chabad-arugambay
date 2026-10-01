@@ -117,7 +117,10 @@ function Dropdown({ item, pathname }: { item: NavItem; pathname: string }) {
         onPointerLeave={(e) => {
           if (e.pointerType === 'mouse') scheduleClose();
         }}
-        className={`absolute end-0 top-full z-50 w-[270px] pt-2 transition-all ${
+        /* start-0 anchors the panel's leading edge — the right one in
+           Hebrew — so it opens leftward into the page instead of outward
+           past the trigger. */
+        className={`absolute start-0 top-full z-50 w-[190px] pt-2 transition-all ${
           open
             ? 'visible translate-y-0 opacity-100'
             : 'invisible -translate-y-1 opacity-0'
@@ -129,12 +132,14 @@ function Dropdown({ item, pathname }: { item: NavItem; pathname: string }) {
               <Link
                 href={c.href}
                 onClick={() => setOpen(false)}
-                className={`flex flex-col gap-0.5 rounded-input px-3 py-2.5 transition-colors ${
-                  pathname === c.href ? 'bg-accent-soft' : 'hover:bg-surface'
+                className={`block rounded-input px-3 py-2 text-[.86rem] transition-colors ${
+                  pathname === c.href ? 'bg-accent-soft font-medium' : 'hover:bg-surface'
                 }`}
               >
-                <span className="text-[.88rem] font-medium">{c.label}</span>
-                {c.hint && <span className="text-[.74rem] text-fg-subtle">{c.hint}</span>}
+                {/* The hints are gone: four labels this plain explain
+                    themselves, and the second line doubled the panel's
+                    height for no one. */}
+                {c.label}
               </Link>
             </li>
           ))}

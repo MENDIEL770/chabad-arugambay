@@ -21,6 +21,11 @@ export interface TemplateMeal {
 }
 
 export interface EventTemplate {
+  /**
+   * Dietary options every new form offers. Empty means the question is not
+   * asked at all; a meal can still override it either way.
+   */
+  mealChoices: string[];
   intro: I18n;
   meals: TemplateMeal[];
   askEmail: boolean;
@@ -34,6 +39,9 @@ export interface EventTemplate {
 
 /** What the brief specified, and what the generator used before this table. */
 export const DEFAULT_TEMPLATE: EventTemplate = {
+  // Off out of the box: a form that asks about diet when the house serves
+  // one menu wastes a question, and turning it on is one checkbox.
+  mealChoices: [],
   intro: {
     he: 'סעודות על שפת הים. מי שמגיע — מוזמן.',
     en: 'Meals by the sea. Everyone passing through is welcome.',
@@ -102,6 +110,7 @@ export async function getEventTemplate(): Promise<EventTemplate> {
     askNotes: data.ask_notes !== false,
     askParticipants: data.ask_participants !== false,
     donationAmounts: (data.donation_amounts as number[]) ?? DEFAULT_TEMPLATE.donationAmounts,
+    mealChoices: (data.meal_choices as string[] | null) ?? DEFAULT_TEMPLATE.mealChoices,
     weeksAhead: (data.weeks_ahead as number) ?? DEFAULT_TEMPLATE.weeksAhead,
     closesHoursBefore: (data.closes_hours_before as number) ?? DEFAULT_TEMPLATE.closesHoursBefore,
   };

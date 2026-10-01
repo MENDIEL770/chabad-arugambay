@@ -8,6 +8,7 @@ import { PhoneField } from '@/components/ui/phone-field';
 import type { EventRecord } from '@/lib/data/events';
 import { register, type RegisterInput } from '@/app/f/[slug]/actions';
 import { advanceOnEnter } from '@/lib/form-keyboard';
+import { choicesForMeal, type MealChoiceDef } from '@/lib/data/meal-choices';
 
 const DONATIONS = [0, 50, 100, 180, 360];
 
@@ -40,7 +41,7 @@ export function RegisterForm({ event }: { event: EventRecord }) {
    * reveals a separate set per meal.
    */
   const [sameForAll, setSameForAll] = useState(true);
-  const [names, setNames] = useState<Record<string, { first: string; last: string }[]>>({});
+  const [names, setNames] = useState<Record<string, { first: string; last: string; choice: string }[]>>({});
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,15 +77,41 @@ export function RegisterForm({ event }: { event: EventRecord }) {
   const sharedSeats = seatsByMeal.reduce((m, x) => Math.max(m, x.seats), 0);
 
   function nameAt(mealId: string, i: number) {
-    return names[mealId]?.[i] ?? { first: '', last: '' };
+    return names[mealId]?.[i] ?? { first: '', last: '', choice: '' };
   }
 
-  function setNameAt(mealId: string, i: number, patch: Partial<{ first: string; last: string }>) {
+  function setNameAt(
+    mealId: string,
+    i: number,
+    patch: Partial<{ first: string; last: string; choice: string }>,
+  ) {
     setNames((prev) => {
       const list = [...(prev[mealId] ?? [])];
-      list[i] = { ...(list[i] ?? { first: '', last: '' }), ...patch };
+      list[i] = { ...(list[i] ?? { first: '', last: '', choice: '' }), ...patch };
       return { ...prev, [mealId]: list };
     });
+  }
+
+  /**
+   * Which dietary options to offer beside a person's name.
+   *
+   * With one list for every meal, the options are the union across the
+   * meals being booked: a person's diet does not change between Friday
+   * night and lunch, and asking twice would be the wrong question.
+   */
+  function choicesFor(mealId: string): MealChoiceDef[] {
+    if (mealId !== SHARED) {
+      const meal = event.meals.find((m) => m.id === mealId);
+      return choicesForMeal(meal?.mealChoices, event.mealChoices);
+    }
+    const seen = new Map<string, MealChoiceDef>();
+    for (const m of seatsByMeal) {
+      const meal = event.meals.find((x) => x.id === m.mealId);
+      for (const c of choicesForMeal(meal?.mealChoices, event.mealChoices)) {
+        seen.set(c.key, c);
+      }
+    }
+    return [...seen.values()];
   }
 
   const SHARED = '__shared__';
@@ -130,10 +157,17 @@ export function RegisterForm({ event }: { event: EventRecord }) {
       participants: seatsByMeal.flatMap((meal) =>
         Array.from({ length: meal.seats }, (_, i) => {
           const n = nameAt(sameForAll ? SHARED : meal.mealId, i);
+          // A shared answer still has to be valid for this particular
+          // meal: lunch may not offer what Friday night does.
+          const allowed = choicesForMeal(
+            event.meals.find((m) => m.id === meal.mealId)?.mealChoices,
+            event.mealChoices,
+          ).map((c) => c.key);
           return {
             mealId: meal.mealId,
             fullName: `${n.first.trim()} ${n.last.trim()}`.trim(),
             isChild: false,
+            mealChoice: n.choice && allowed.includes(n.choice) ? n.choice : undefined,
           };
         }).filter((p) => p.fullName.length > 0),
       ),
@@ -310,9 +344,6 @@ export function RegisterForm({ event }: { event: EventRecord }) {
                       />
                       <input
                         className="field flex-1"
-                        // Per-field direction: a Hebrew name aligns right, a
-                        // Latin one left. Forcing ltr on the whole box put
-                        // Hebrew names against the wrong edge.
                         dir="auto"
                         value={n.last}
                         onChange={(e) => setNameAt(group.mealId, i, { last: e.target.value })}
@@ -320,6 +351,21 @@ export function RegisterForm({ event }: { event: EventRecord }) {
                         aria-label={`שם משפחה של משתתף ${i + 1}`}
                         autoComplete="off"
                       />
+                      {choicesFor(group.mealId).length > 0 && (
+                        <select
+                          className="field max-[520px]:w-full sm:w-[11rem]"
+                          value={n.choice}
+                          onChange={(e) =>
+                            setNameAt(group.mealId, i, { choice: e.target.value })
+                          }
+                          aria-label={`בחירת מנה למשתתף ${i + 1}`}
+                        >
+                          <option value="">מנה רגילה</option>
+                          {choicesFor(group.mealId).map((c) => (
+                            <option key={c.key} value={c.key}>{c.label.he}</option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                   );
                 })}

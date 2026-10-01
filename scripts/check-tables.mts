@@ -62,6 +62,10 @@ const COLUMNS: Record<string, { table: string; column: string }[]> = {
     { table: 'happenings', column: 'image_path' },
   ],
   '0016_travel': [{ table: 'tips', column: 'image_path' }],
+  '0022_meal_choices': [
+    { table: 'event_template', column: 'meal_choices' },
+    { table: 'event_meals', column: 'meal_choices' },
+  ],
   '0018_messages': [{ table: 'message_templates', column: 'delay_min' }],
 };
 

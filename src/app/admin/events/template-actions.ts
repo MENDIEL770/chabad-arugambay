@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { hasSupabase, TENANT_ID } from '@/lib/config';
 import { NotAuthorized, requireRole } from '@/lib/auth';
 import type { TemplateMeal } from '@/lib/data/event-template';
+import { knownChoices } from '@/lib/data/meal-choices';
 
 export interface ActionResult {
   ok: boolean;
@@ -38,6 +39,7 @@ const TemplateSchema = z.object({
   askNotes: z.boolean(),
   askParticipants: z.boolean(),
   donationAmounts: z.array(z.coerce.number().int().min(0).max(100000)).max(8),
+  mealChoices: z.array(z.string()).max(8),
   weeksAhead: z.coerce.number().int().min(1).max(104),
   closesHoursBefore: z.coerce.number().int().min(0).max(336),
 });
@@ -98,6 +100,9 @@ export async function saveEventTemplate(input: TemplateInput): Promise<ActionRes
         ask_notes: v.askNotes,
         ask_participants: v.askParticipants,
         donation_amounts: v.donationAmounts,
+        // Filtered against the catalogue so a key nothing understands
+        // cannot reach a form as an unlabelled radio button.
+        meal_choices: knownChoices(v.mealChoices),
         weeks_ahead: v.weeksAhead,
         closes_hours_before: v.closesHoursBefore,
       },

@@ -17,6 +17,12 @@ export interface RegistrantType {
 export interface EventMeal {
   id: string;
   name: I18n;
+  /**
+   * null means inherit the template. An empty array is a deliberate "do not
+   * ask for this meal" — Shabbat lunch is a buffet where the question is
+   * meaningless even when Friday night offers a plate.
+   */
+  mealChoices: string[] | null;
   servesAt: string | null;
   capacity: number | null;
   seatsLeft: number | null;
@@ -26,6 +32,11 @@ export interface EventMeal {
 
 export interface EventRecord {
   id: string;
+  /**
+   * The template's dietary options, carried on the event so the public
+   * form can resolve a meal's `null` (inherit) without a second query.
+   */
+  mealChoices: string[];
   slug: string;
   kind: 'shabbat' | 'yomtov' | 'event' | 'payment_page';
   title: I18n;
@@ -67,12 +78,18 @@ export async function getOpenEvents(): Promise<EventRecord[]> {
     }
     throw new Error(`Could not load events: ${error.message}`);
   }
-  return (data ?? []).map((r) => shape(r, []));
+  // The list view shows no meals, so it needs no choices either.
+  return (data ?? []).map((r) => shape(r, [], []));
 }
 
-function shape(r: Record<string, unknown>, meals: EventMeal[]): EventRecord {
+function shape(
+  r: Record<string, unknown>,
+  meals: EventMeal[],
+  templateChoices: string[] = [],
+): EventRecord {
   return {
     id: r.id as string,
+    mealChoices: templateChoices,
     slug: r.slug as string,
     kind: r.kind as EventRecord['kind'],
     title: r.title as I18n,
@@ -135,6 +152,9 @@ async function loadEvent(by: 'slug' | 'id', value: string): Promise<EventRecord 
       name: m.name as I18n,
       servesAt: (m.serves_at as string | null) ?? null,
       capacity: (m.capacity as number | null) ?? null,
+      // Absent column (migration not run) reads as inherit, which is
+      // the behaviour that existed before the feature.
+      mealChoices: (m.meal_choices as string[] | null) ?? null,
       seatsLeft: m.capacity == null ? null : (left as number),
       isOpen: m.is_open as boolean,
       types: (types ?? [])
@@ -150,7 +170,11 @@ async function loadEvent(by: 'slug' | 'id', value: string): Promise<EventRecord 
     });
   }
 
-  return shape(ev, shaped);
+  // The template's default travels with the event so the public form can
+  // resolve a meal's null (inherit) without a second round trip.
+  const template = await getEventTemplate();
+
+  return shape(ev, shaped, template.mealChoices);
 }
 
 export async function getEventBySlug(slug: string): Promise<EventRecord | null> {
@@ -224,6 +248,7 @@ export async function generateShabbatEvents(count?: number): Promise<GenerateRes
           name: m.name,
           sort: m.sort,
           capacity: m.capacity,
+          meal_choices: null,
           // Relative to candle lighting, so the meal stays where it belongs
           // in the evening as sunset moves across the year.
           serves_at: o.candleLighting.plus({ minutes: m.servesOffsetMin }).toISO(),

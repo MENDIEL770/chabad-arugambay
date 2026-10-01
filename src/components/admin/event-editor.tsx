@@ -7,6 +7,7 @@ import { runAction } from '@/lib/run-action';
 import {
   saveEvent, saveMeal, saveRegistrantType, type ActionResult,
 } from '@/app/admin/events/event-actions';
+import { MEAL_CHOICES } from '@/lib/data/meal-choices';
 
 function Toast({ r }: { r: ActionResult | null }) {
   if (!r?.message) return null;
@@ -23,6 +24,83 @@ function Toast({ r }: { r: ActionResult | null }) {
 }
 
 /** `datetime-local` wants the wall clock in the restaurant's zone. */
+/**
+ * The per-meal dietary question.
+ *
+ * Three states, because two are not enough. "Inherit" follows the global
+ * default; "custom" is this meal's own answer, and a custom answer with
+ * nothing ticked is a deliberate off — Shabbat lunch may be a buffet where
+ * the question is meaningless even when Friday night offers a plate.
+ */
+function MealChoiceField({ meal }: { meal: { mealChoices: string[] | null } }) {
+  const [mode, setMode] = useState<'inherit' | 'custom'>(
+    meal.mealChoices === null ? 'inherit' : 'custom',
+  );
+  const [keys, setKeys] = useState<string[]>(meal.mealChoices ?? []);
+
+  return (
+    <fieldset className="col-span-2 max-[700px]:col-span-1">
+      <legend className="label !mb-1">בחירת מנה מיוחדת</legend>
+      <input type="hidden" name="choiceMode" value={mode} />
+
+      <div className="mb-2 flex flex-wrap gap-1.5">
+        {([
+          ['inherit', 'כמו בהגדרות הכלליות'],
+          ['custom', 'הגדרה לסעודה הזו'],
+        ] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            className={`btn btn-sm ${mode === value ? 'btn-accent' : 'btn-ghost'}`}
+            onClick={() => setMode(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'custom' && (
+        <>
+          <div className="flex flex-wrap gap-1.5">
+            {MEAL_CHOICES.map((c) => {
+              const on = keys.includes(c.key);
+              return (
+                <label
+                  key={c.key}
+                  className={`cursor-pointer rounded-input border px-3 py-1.5 text-[.84rem] ${
+                    on
+                      ? 'border-accent bg-accent-soft text-accent-strong'
+                      : 'border-line text-fg-muted hover:border-accent/50'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    name="mealChoices"
+                    value={c.key}
+                    checked={on}
+                    onChange={(e) =>
+                      setKeys((prev) =>
+                        e.target.checked ? [...prev, c.key] : prev.filter((k) => k !== c.key),
+                      )
+                    }
+                    className="sr-only"
+                  />
+                  {c.label.he}
+                </label>
+              );
+            })}
+          </div>
+          {keys.length === 0 && (
+            <span className="mt-1 block text-[.74rem] text-fg-subtle">
+              בלי סימון — השאלה לא תישאל בסעודה הזו.
+            </span>
+          )}
+        </>
+      )}
+    </fieldset>
+  );
+}
+
 function toLocalInput(iso: string | null): string {
   if (!iso) return '';
   return DateTime.fromISO(iso).setZone('Asia/Colombo').toFormat("yyyy-LL-dd'T'HH:mm");
@@ -141,6 +219,11 @@ export function EventEditor({ event }: { event: EventRecord }) {
                 <input type="checkbox" name="isOpen" defaultChecked={meal.isOpen} className="size-4 accent-[var(--accent)]" />
                 פתוחה להרשמה
               </label>
+            </div>
+
+            <MealChoiceField meal={meal} />
+
+            <div className="col-span-2 max-[700px]:col-span-1">
               <button type="submit" className="btn btn-ghost btn-sm" disabled={pending}>
                 שמירה
               </button>
