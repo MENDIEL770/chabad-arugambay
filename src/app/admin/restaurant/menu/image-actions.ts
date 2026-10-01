@@ -6,21 +6,13 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { hasSupabase, TENANT_ID } from '@/lib/config';
 import { NotAuthorized, requireRole } from '@/lib/auth';
 import type { AppRole } from '@/lib/roles';
+import { DISH_IMAGE_SPEC } from '@/lib/spec/dish-image';
 
 export interface ActionResult {
   ok: boolean;
   message: string;
 }
 
-/** Shared with the client so the guidance cannot drift from the rule. */
-export const DISH_IMAGE_SPEC = {
-  maxBytes: 8 * 1024 * 1024,
-  warnBytes: 600 * 1024,
-  maxPerDish: 8,
-  minWidth: 800,
-  formats: ['image/jpeg', 'image/png', 'image/webp', 'image/avif'],
-  formatLabel: 'JPEG · WebP · AVIF',
-} as const;
 
 function db() {
   return createServiceClient();

@@ -4,10 +4,10 @@ import Image from 'next/image';
 import { useRef, useState, useTransition } from 'react';
 import { Icon } from '@/components/ui/icon';
 import type { DishImage } from '@/lib/data/types';
-import {
-  DISH_IMAGE_SPEC, deleteDishImage, moveDishImage, uploadDishImage,
+import { deleteDishImage, moveDishImage, uploadDishImage,
   type ActionResult,
 } from '@/app/admin/restaurant/menu/image-actions';
+import { DISH_IMAGE_SPEC } from '@/lib/spec/dish-image';
 
 /**
  * Several photos per dish, ordered.

@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { hasSupabase, TENANT_ID } from '@/lib/config';
 import { NotAuthorized, requireRole } from '@/lib/auth';
 import type { AppRole } from '@/lib/roles';
+import { RECEIPT_IMAGE_SPEC } from '@/lib/spec/receipt-image';
 
 export interface ActionResult {
   ok: boolean;
@@ -86,13 +87,6 @@ const SLOTS = {
 
 export type ReceiptImageSlot = keyof typeof SLOTS;
 
-/** 576px is the full width of 80mm thermal paper; larger is wasted bytes. */
-export const RECEIPT_IMAGE_SPEC = {
-  maxBytes: 2 * 1024 * 1024,
-  recommendedWidth: 576,
-  formats: ['image/png', 'image/jpeg', 'image/webp'],
-  formatLabel: 'PNG · JPEG · WebP',
-} as const;
 
 export async function uploadReceiptImage(formData: FormData): Promise<ActionResult> {
   return guarded('staff', async () => {

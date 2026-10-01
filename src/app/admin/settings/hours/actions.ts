@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
 import { hasSupabase, TENANT_ID } from '@/lib/config';
 import { NotAuthorized, requireRole } from '@/lib/auth';
+import { DAY_NAMES } from '@/lib/days';
 
 export interface ActionResult {
   ok: boolean;
@@ -72,6 +73,3 @@ export async function saveOpeningHours(formData: FormData): Promise<ActionResult
   return { ok: true, message: 'שעות הפתיחה נשמרו.' };
 }
 
-export const DAY_NAMES = [
-  'ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת',
-] as const;

@@ -6,10 +6,10 @@ import {
   PAPER_COLS, SAMPLE_ORDER, renderKitchenTicket, renderReceipt,
   type ReceiptTemplate, type RenderedLine,
 } from '@/lib/receipt';
-import {
-  RECEIPT_IMAGE_SPEC, removeReceiptImage, saveReceiptTemplate, uploadReceiptImage,
+import { removeReceiptImage, saveReceiptTemplate, uploadReceiptImage,
   type ActionResult, type ReceiptImageSlot,
 } from '@/app/admin/restaurant/receipt/actions';
+import { RECEIPT_IMAGE_SPEC } from '@/lib/spec/receipt-image';
 
 /**
  * Paper preview.

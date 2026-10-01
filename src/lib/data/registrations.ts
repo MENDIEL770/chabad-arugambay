@@ -70,18 +70,33 @@ export async function getEventRegistrations(
 
   if (evErr || !event) return null;
 
-  const [{ data: meals }, { data: types }, { data: regs }, { data: items }, { data: people }] =
-    await Promise.all([
-      sb.from('event_meals').select('id, name, serves_at, capacity, sort')
-        .eq('event_id', eventId).order('sort'),
-      sb.from('registrant_types').select('id, meal_id, name, price_ils, seats, sort')
-        .eq('tenant_id', TENANT_ID).order('sort'),
-      sb.from('registrations').select('*')
-        .eq('event_id', eventId).in('state', ['pending', 'confirmed'])
-        .order('created_at'),
-      sb.from('registration_items').select('registration_id, meal_id, type_id, qty'),
-      sb.from('registration_participants').select('registration_id, full_name, meal_id, meal_choice'),
-    ]);
+  const [{ data: meals }, { data: types }, { data: regs }] = await Promise.all([
+    sb.from('event_meals').select('id, name, serves_at, capacity, sort')
+      .eq('event_id', eventId).order('sort'),
+    sb.from('registrant_types').select('id, meal_id, name, price_ils, seats, sort')
+      .eq('tenant_id', TENANT_ID).order('sort'),
+    sb.from('registrations').select('*')
+      .eq('event_id', eventId).in('state', ['pending', 'confirmed'])
+      .order('created_at'),
+  ]);
+
+  // Items and participants are fetched for THIS event's registrations only.
+  // Reading them tenant-wide and filtering here looked equivalent but was
+  // not: PostgREST caps a request at 1000 rows, so once enough Shabbatot
+  // had accumulated the oldest rows silently fell off the end and names
+  // started disappearing from the list and the export.
+  const regIds = (regs ?? []).map((r) => r.id as string);
+
+  const [{ data: items }, { data: people }] = regIds.length
+    ? await Promise.all([
+        sb.from('registration_items')
+          .select('registration_id, meal_id, type_id, qty')
+          .in('registration_id', regIds),
+        sb.from('registration_participants')
+          .select('registration_id, full_name, meal_id, meal_choice')
+          .in('registration_id', regIds),
+      ])
+    : [{ data: [] }, { data: [] }];
 
   const mealName = new Map((meals ?? []).map((m) => [m.id as string, he(m.name)]));
   const typeById = new Map(
@@ -91,10 +106,8 @@ export async function getEventRegistrations(
     ]),
   );
 
-  const regIds = new Set((regs ?? []).map((r) => r.id as string));
-  // Items and participants are fetched tenant-wide, so filter to this event.
-  const myItems = (items ?? []).filter((i) => regIds.has(i.registration_id as string));
-  const myPeople = (people ?? []).filter((p) => regIds.has(p.registration_id as string));
+  const myItems = items ?? [];
+  const myPeople = people ?? [];
 
   const tallies: MealTally[] = (meals ?? []).map((m) => {
     const mid = m.id as string;

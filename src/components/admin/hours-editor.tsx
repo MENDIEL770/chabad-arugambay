@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react';
 import type { DayHours } from '@/lib/data/hours';
 import { runAction } from '@/lib/run-action';
-import { DAY_NAMES, saveOpeningHours, type ActionResult } from '@/app/admin/settings/hours/actions';
+import { saveOpeningHours, type ActionResult } from '@/app/admin/settings/hours/actions';
+import { DAY_NAMES } from '@/lib/days';
 
 /**
  * Weekly opening hours.
