@@ -68,35 +68,36 @@ export function ContactSection({ statusLabel }: { statusLabel: string }) {
         </Reveal>
 
         <Reveal delay={120}>
-          <a
-            href={maps}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="פתיחת המיקום במפות"
-            className="group relative block overflow-hidden rounded-card border border-line bg-ink-panel"
-          >
-            {/* A drawn coastline, not a map tile — no third-party request,
-                and it only has to say "east coast, on the water". */}
-            <svg viewBox="0 0 400 300" className="h-full w-full" role="presentation">
-              <rect width="400" height="300" fill="#0e3a4a" />
-              <path d="M0 150 Q70 120 110 160 T210 170 Q280 150 330 190 L400 210 L400 300 L0 300 Z" fill="#1d5d4a" />
-              <path d="M0 150 Q70 120 110 160 T210 170 Q280 150 330 190 L400 210" fill="none" stroke="#2AA6A0" strokeWidth="2.5" />
-              {[40, 90, 140, 190, 240].map((y) => (
-                <path key={y} d={`M0 ${y} Q60 ${y - 8} 120 ${y} T240 ${y} T400 ${y}`} fill="none" stroke="#164f63" strokeWidth="1.5" />
-              ))}
-              <circle cx="238" cy="178" r="22" fill="#FDB940" opacity=".2">
-                <animate attributeName="r" values="18;30;18" dur="3s" repeatCount="indefinite" />
-              </circle>
-              <circle cx="238" cy="178" r="7" fill="#FDB940" stroke="#211f20" strokeWidth="2" />
-            </svg>
-
-            <span className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 bg-ink-panel/85 px-4 py-3 text-fg-on-dark backdrop-blur-sm">
-              <span className="text-[.85rem] font-medium">Arugam Bay, Sri Lanka</span>
-              <span className="clock text-[.72rem] text-[#a8a4a6]">
-                {latitude}°N {longitude}°E
+          {/* A real map, loaded lazily.
+           *
+           * This was a drawn coastline to avoid the weight of an embed, but
+           * a picture of "a coast" does not help anyone find the house —
+           * which is the only job this element has. `loading="lazy"` keeps
+           * it off the critical path, so it costs nothing until someone
+           * scrolls to it. */}
+          <div className="overflow-hidden rounded-card border border-line bg-surface-sunk">
+            <iframe
+              title="מיקום בית חב״ד ארוגם ביי"
+              src={`https://maps.google.com/maps?q=${latitude},${longitude}&z=16&hl=iw&output=embed`}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="block h-[300px] w-full border-0"
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3">
+              <span className="text-[.85rem] font-medium">
+                Main Street, Arugam Bay
               </span>
-            </span>
-          </a>
+              <a
+                href={maps}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-[.82rem] font-medium text-accent-strong hover:underline"
+              >
+                פתיחה במפות
+                <Icon name="arrow" size={14} />
+              </a>
+            </div>
+          </div>
         </Reveal>
       </div>
     </section>

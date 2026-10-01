@@ -1,6 +1,3 @@
--- Run this whole file in the Supabase SQL Editor.
--- Then verify:  npm run check:tables
-
 -- 0015_place_order.sql
 --
 -- place_order, on its own and corrected.

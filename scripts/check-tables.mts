@@ -17,6 +17,38 @@ const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.SUPABASE_SERVICE_ROLE
   auth: { persistSession: false },
 });
 
+/**
+ * Some migrations add no table at all — 0006 adds a column and two
+ * functions, 0014 only rewrites one. Checking tables alone reported "every
+ * migration has run" while place_order did not exist, which is how
+ * restaurant ordering stayed broken without anyone noticing.
+ */
+const FUNCTIONS: Record<string, { name: string; args: Record<string, unknown> }[]> = {
+  '0006_order_tracking': [
+    { name: 'order_tracking', args: { p_token: 'probe' } },
+    {
+      name: 'place_order',
+      args: {
+        p_tenant: '00000000-0000-0000-0000-000000000001', p_channel: 'web',
+        p_fulfillment: 'pickup', p_name: 'probe', p_phone: '+10000000',
+        p_lang: 'he', p_address: null, p_address_notes: null, p_table_no: null,
+        p_pay_method: 'cash_lkr_at_counter', p_lines: [], p_delivery_fee: 0,
+      },
+    },
+  ],
+  '0007_events': [
+    { name: 'registration_tracking', args: { p_token: 'probe' } },
+  ],
+  '0011_printing': [
+    { name: 'claim_print_job', args: { p_token: 'probe' } },
+  ],
+};
+
+const COLUMNS: Record<string, { table: string; column: string }[]> = {
+  '0006_order_tracking': [{ table: 'orders', column: 'track_token' }],
+  '0013_receipt_media': [{ table: 'receipt_template', column: 'logo_path' }],
+};
+
 const BY_MIGRATION: Record<string, string[]> = {
   '0001_core':          ['tenants', 'memberships', 'tenant_settings'],
   '0002_calendar':      ['tenant_zmanim'],
@@ -31,21 +63,54 @@ const BY_MIGRATION: Record<string, string[]> = {
   '0013_receipt_media': [],
 };
 
+/** A function that exists raises its own error; a missing one says so. */
+async function functionExists(name: string, args: Record<string, unknown>) {
+  const { error } = await sb.rpc(name, args);
+  if (!error) return true;
+  return !/could not find the function|schema cache/i.test(error.message);
+}
+
+async function columnExists(table: string, column: string) {
+  const { error } = await sb.from(table).select(column).limit(1);
+  return !error;
+}
+
+const ALL = new Set([
+  ...Object.keys(BY_MIGRATION),
+  ...Object.keys(FUNCTIONS),
+  ...Object.keys(COLUMNS),
+]);
+
 let missing = 0;
-for (const [migration, tables] of Object.entries(BY_MIGRATION)) {
-  if (tables.length === 0) continue;
+for (const migration of [...ALL].sort()) {
+  const tables = BY_MIGRATION[migration] ?? [];
+  const fns = FUNCTIONS[migration] ?? [];
+  const cols = COLUMNS[migration] ?? [];
+  const gaps: string[] = [];
+
+  for (const f of fns) {
+    if (!(await functionExists(f.name, f.args))) gaps.push(`${f.name}()`);
+  }
+  for (const c of cols) {
+    if (!(await columnExists(c.table, c.column))) gaps.push(`${c.table}.${c.column}`);
+  }
+  if (tables.length === 0) {
+    if (gaps.length === 0) console.log(`  ✓ ${migration}`);
+    else { missing++; console.log(`  ✗ ${migration.padEnd(26)} missing: ${gaps.join(', ')}`); }
+    continue;
+  }
   const results = await Promise.all(
     tables.map(async (t) => {
       const { error } = await sb.from(t).select('*').limit(1);
       return { t, ok: !error, code: error?.code };
     }),
   );
-  const bad = results.filter((r) => !r.ok);
+  const bad = results.filter((r) => !r.ok).map((b) => b.t).concat(gaps);
   if (bad.length === 0) {
     console.log(`  ✓ ${migration}`);
   } else {
     missing++;
-    console.log(`  ✗ ${migration.padEnd(20)} missing: ${bad.map((b) => b.t).join(', ')}`);
+    console.log(`  ✗ ${migration.padEnd(26)} missing: ${bad.join(', ')}`);
   }
 }
 
