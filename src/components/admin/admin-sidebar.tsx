@@ -29,6 +29,7 @@ export const SECTIONS: { title: string; entries: Entry[] }[] = [
       { href: '/admin/restaurant/menu', label: 'תפריט ומלאי', icon: 'dish' },
       { href: '/admin/restaurant/receipt', label: 'עיצוב הקבלה', icon: 'image' },
       { href: '/admin/settings/hours', label: 'שעות פתיחה', icon: 'clock' },
+      { href: '/admin/reports', label: 'דוחות', icon: 'article', hint: 'מכירות לפי יום ומנה' },
     ],
   },
   {

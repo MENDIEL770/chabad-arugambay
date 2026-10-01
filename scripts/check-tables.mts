@@ -42,6 +42,10 @@ const FUNCTIONS: Record<string, { name: string; args: Record<string, unknown> }[
   '0020_rate_limit': [
     { name: 'bump_rate_limit', args: { p_tenant: '00000000-0000-0000-0000-000000000001', p_bucket: 'probe', p_key: '', p_limit: 1, p_window_sec: 60 } },
   ],
+  '0021_reports': [
+    { name: 'report_summary', args: { p_tenant: '00000000-0000-0000-0000-000000000001', p_from: '2026-01-01', p_to: '2026-01-02' } },
+    { name: 'report_by_dish', args: { p_tenant: '00000000-0000-0000-0000-000000000001', p_from: '2026-01-01', p_to: '2026-01-02' } },
+  ],
   '0011_printing': [
     { name: 'claim_print_job', args: { p_token: 'probe' } },
   ],

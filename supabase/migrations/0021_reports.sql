@@ -1,6 +1,3 @@
--- Run in the Supabase SQL Editor, then: npm run check:tables
--- Safe to run more than once.
-
 -- 0021_reports.sql — sales reporting over the order snapshots.
 --
 -- ASCII only: Hebrew in a .sql file on this project has been corrupted by a
