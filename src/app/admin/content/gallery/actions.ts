@@ -6,8 +6,8 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { hasSupabase, TENANT_ID } from '@/lib/config';
 import { NotAuthorized, requireRole } from '@/lib/auth';
 import type { AppRole } from '@/lib/roles';
-import { GALLERY_IMAGE_SPEC } from '@/lib/spec/gallery-image';
 import { toEmbedUrl } from '@/lib/data/gallery';
+import { objectExists } from '@/app/admin/upload-actions';
 
 export interface ActionResult {
   ok: boolean;
@@ -15,6 +15,8 @@ export interface ActionResult {
 }
 
 const BUCKET = 'content';
+
+
 
 async function guarded(min: AppRole, run: () => Promise<ActionResult>): Promise<ActionResult> {
   try {
@@ -48,47 +50,43 @@ async function nextSort(): Promise<number> {
   return ((data?.sort as number) ?? -1) + 1;
 }
 
-export async function uploadPhoto(formData: FormData): Promise<ActionResult> {
+/**
+ * Record a photo that has already landed in Storage.
+ *
+ * Verifies the object actually exists before writing the row: a row
+ * pointing at a file that never arrived is a broken image forever, and the
+ * browser could call this without having uploaded anything.
+ */
+export async function commitPhoto(formData: FormData): Promise<ActionResult> {
   return guarded('staff', async () => {
-    const file = formData.get('photo');
-    if (!(file instanceof File) || file.size === 0) {
-      return { ok: false, message: 'לא נבחרה תמונה.' };
-    }
-    if (file.size > GALLERY_IMAGE_SPEC.maxBytes) {
-      return { ok: false, message: 'התמונה גדולה מ-10MB. כדאי לדחוס.' };
-    }
-    if (!(GALLERY_IMAGE_SPEC.formats as readonly string[]).includes(file.type)) {
-      return { ok: false, message: `פורמט לא נתמך. ${GALLERY_IMAGE_SPEC.formatLabel}.` };
+    const path = String(formData.get('path') ?? '');
+    if (!path.startsWith(`${TENANT_ID}/gallery/`)) {
+      return { ok: false, message: 'נתיב לא תקין.' };
     }
 
     const sb = createServiceClient();
-    const ext = file.type.split('/')[1].replace('jpeg', 'jpg');
-    // Tenant folder first: the storage policy reads the tenant id out of
-    // the path, so a key without it is rejected for anyone but the service
-    // role and would break the day this runs as a normal user.
-    const key = `${TENANT_ID}/gallery/${Date.now()}-${Math.round(file.size % 9973)}.${ext}`;
 
-    const { error: upErr } = await sb.storage
-      .from(BUCKET).upload(key, file, { contentType: file.type, upsert: false });
-    if (upErr) return { ok: false, message: `ההעלאה נכשלה: ${upErr.message}` };
+    if (!(await objectExists(BUCKET, path))) {
+      return { ok: false, message: 'הקובץ לא נמצא באחסון. נסו להעלות שוב.' };
+    }
 
     const { error } = await sb.from('media_items').insert({
       tenant_id: TENANT_ID,
       kind: 'photo',
-      storage_path: key,
+      storage_path: path,
       caption: { he: String(formData.get('caption') ?? '').trim() },
       album: String(formData.get('album') ?? '').trim() || 'general',
       taken_on: String(formData.get('takenOn') ?? '') || null,
       is_featured: formData.get('featured') === 'on',
       width_px: Number(formData.get('width')) || null,
       height_px: Number(formData.get('height')) || null,
-      bytes: file.size,
+      bytes: Number(formData.get('bytes')) || null,
       sort: await nextSort(),
     });
 
     if (error) {
       // Leave no orphan file behind when the row fails.
-      await sb.storage.from(BUCKET).remove([key]);
+      await sb.storage.from(BUCKET).remove([path]);
       return fail(error);
     }
     return done('התמונה נוספה לגלריה.');

@@ -7,6 +7,7 @@ import { hasSupabase, TENANT_ID } from '@/lib/config';
 import { NotAuthorized, requireRole } from '@/lib/auth';
 import type { AppRole } from '@/lib/roles';
 import { DISH_IMAGE_SPEC } from '@/lib/spec/dish-image';
+import { objectExists } from '@/app/admin/upload-actions';
 
 export interface ActionResult {
   ok: boolean;
@@ -40,26 +41,31 @@ function missingTable(msg: string): boolean {
   return /menu_item_images|schema cache|does not exist/i.test(msg);
 }
 
-export async function uploadDishImage(formData: FormData): Promise<ActionResult> {
+/**
+ * Record a dish photo that has already landed in Storage.
+ *
+ * The bytes go straight from the browser to Storage with a one-shot token
+ * from createUploadTicket. They must not come through here: Next caps an
+ * action body at 1MB by default and Vercel caps a serverless request body
+ * at 4.5MB, so the 8MB this screen offers could never have arrived — the
+ * upload failed as a redacted React #441 with no mention of size.
+ */
+export async function commitDishImage(formData: FormData): Promise<ActionResult> {
   return guarded('staff', async () => {
     const itemId = String(formData.get('itemId') ?? '');
-    const file = formData.get('image');
+    const path = String(formData.get('path') ?? '');
 
     if (!z.string().uuid().safeParse(itemId).success) {
       return { ok: false, message: 'מנה לא מזוהה.' };
     }
-    if (!(file instanceof File) || file.size === 0) {
-      return { ok: false, message: 'לא נבחרה תמונה.' };
+    // The path is minted server-side and must still match this dish, so a
+    // forged request cannot attach someone else's file to a menu item.
+    if (!path.startsWith(`${TENANT_ID}/${itemId}/`)) {
+      return { ok: false, message: 'נתיב לא תקין.' };
     }
-    if (file.size > DISH_IMAGE_SPEC.maxBytes) {
-      return { ok: false, message: 'התמונה גדולה מ-8MB. כדאי לדחוס.' };
+    if (!(await objectExists('menu', path))) {
+      return { ok: false, message: 'הקובץ לא נמצא באחסון. נסו להעלות שוב.' };
     }
-    if (!(DISH_IMAGE_SPEC.formats as readonly string[]).includes(file.type)) {
-      return { ok: false, message: `פורמט לא נתמך. ${DISH_IMAGE_SPEC.formatLabel}.` };
-    }
-
-    const width = Number(formData.get('width')) || null;
-    const height = Number(formData.get('height')) || null;
 
     const sb = db();
 
@@ -76,40 +82,33 @@ export async function uploadDishImage(formData: FormData): Promise<ActionResult>
       return { ok: false, message: countErr.message };
     }
     if ((existing?.length ?? 0) >= DISH_IMAGE_SPEC.maxPerDish) {
+      await sb.storage.from('menu').remove([path]);
       return {
         ok: false,
         message: `יש כבר ${DISH_IMAGE_SPEC.maxPerDish} תמונות למנה. מחקו אחת קודם.`,
       };
     }
 
-    const ext = file.type.split('/')[1].replace('jpeg', 'jpg');
-    const key = `${TENANT_ID}/${itemId}/${Date.now()}.${ext}`;
-
-    const { error: upErr } = await sb.storage
-      .from('menu')
-      .upload(key, file, { contentType: file.type, upsert: false });
-    if (upErr) return { ok: false, message: `ההעלאה נכשלה: ${upErr.message}` };
-
     const nextSort = ((existing?.[0]?.sort as number) ?? -1) + 1;
 
     const { error: rowErr } = await sb.from('menu_item_images').insert({
       tenant_id: TENANT_ID,
       item_id: itemId,
-      storage_path: key,
+      storage_path: path,
       sort: nextSort,
-      width_px: width,
-      height_px: height,
-      bytes: file.size,
+      width_px: Number(formData.get('width')) || null,
+      height_px: Number(formData.get('height')) || null,
+      bytes: Number(formData.get('bytes')) || null,
     });
 
     if (rowErr) {
-      await sb.storage.from('menu').remove([key]);
+      await sb.storage.from('menu').remove([path]);
       return { ok: false, message: `שמירת הנתיב נכשלה: ${rowErr.message}` };
     }
 
     // The first photo also becomes the thumbnail used in lists.
     if (nextSort === 0) {
-      await sb.from('menu_items').update({ image_path: key }).eq('id', itemId).eq('tenant_id', TENANT_ID);
+      await sb.from('menu_items').update({ image_path: path }).eq('id', itemId).eq('tenant_id', TENANT_ID);
     }
 
     return done('התמונה נוספה.');

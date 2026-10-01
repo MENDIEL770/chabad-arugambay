@@ -7,9 +7,11 @@ import type { MediaItem } from '@/lib/data/gallery';
 import { GALLERY_IMAGE_SPEC, ALBUM_SUGGESTIONS } from '@/lib/spec/gallery-image';
 import { runAction } from '@/lib/run-action';
 import {
-  addVideo, deleteMedia, editMedia, moveMedia, toggleFeatured, uploadPhoto,
-  type ActionResult,
+  addVideo, commitPhoto, deleteMedia, editMedia, moveMedia,
+  toggleFeatured, type ActionResult,
 } from '@/app/admin/content/gallery/actions';
+import { createUploadTicket, type Ticket } from '@/app/admin/upload-actions';
+import { measureImage, uploadToTicket } from '@/lib/upload';
 
 function AlbumList({ albums }: { albums: string[] }) {
   return (
@@ -25,29 +27,26 @@ function Uploader({ onDone }: { onDone: (r: ActionResult) => void }) {
   const [pending, start] = useTransition();
   const [preview, setPreview] = useState<string | null>(null);
   const [warn, setWarn] = useState<string | null>(null);
-  const dims = useRef<{ w: number; h: number } | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
+  const file = useRef<File | null>(null);
+  const dims = useRef<{ width: number; height: number } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  function pick(file: File | undefined) {
+  async function pick(chosen: File | undefined) {
     setWarn(null);
     dims.current = null;
-    if (!file) { setPreview(null); return; }
+    file.current = chosen ?? null;
+    if (!chosen) { setPreview(null); return; }
 
-    const url = URL.createObjectURL(file);
-    setPreview(url);
+    setPreview(URL.createObjectURL(chosen));
 
-    // Measured in the browser so the dimensions go up with the row and the
-    // grid can reserve the right space instead of reflowing on load.
-    const img = new window.Image();
-    img.onload = () => {
-      dims.current = { w: img.naturalWidth, h: img.naturalHeight };
-      if (img.naturalWidth < GALLERY_IMAGE_SPEC.minWidth) {
-        setWarn(`התמונה צרה (${img.naturalWidth}px). מתחת ל-${GALLERY_IMAGE_SPEC.minWidth}px היא תיראה מטושטשת.`);
-      } else if (file.size > GALLERY_IMAGE_SPEC.warnBytes) {
-        setWarn(`${Math.round(file.size / 1024)}KB — תיטען לאט בחיבור חלש. כדאי לדחוס.`);
-      }
-    };
-    img.src = url;
+    const m = await measureImage(chosen);
+    dims.current = m;
+    if (m && m.width < GALLERY_IMAGE_SPEC.minWidth) {
+      setWarn(`התמונה צרה (${m.width}px). מתחת ל-${GALLERY_IMAGE_SPEC.minWidth}px היא תיראה מטושטשת.`);
+    } else if (chosen.size > GALLERY_IMAGE_SPEC.warnBytes) {
+      setWarn(`${Math.round(chosen.size / 1024)}KB — תיטען לאט בחיבור חלש. כדאי לדחוס.`);
+    }
   }
 
   return (
@@ -55,13 +54,38 @@ function Uploader({ onDone }: { onDone: (r: ActionResult) => void }) {
       ref={formRef}
       className="grid grid-cols-[13rem_1fr] gap-4 rounded-input border border-line bg-surface p-4 max-[760px]:grid-cols-1"
       action={(fd) => start(async () => {
+        const chosen = file.current;
+        if (!chosen) { onDone({ ok: false, message: 'לא נבחרה תמונה.' }); return; }
+
+        // Three steps, in this order on purpose: the server decides whether
+        // the upload is allowed, the browser sends the bytes straight to
+        // Storage, and only then is a row written. A row before the bytes
+        // would be a permanently broken image.
+        setProgress('מבקש אישור…');
+        const ticket = await runAction(() =>
+          createUploadTicket('gallery', chosen.type, chosen.size));
+        if (!ticket.ok) { setProgress(null); onDone(ticket as ActionResult); return; }
+
+        setProgress('מעלה…');
+        const up = await uploadToTicket(ticket as Ticket, chosen);
+        if (!up.ok) { setProgress(null); onDone(up); return; }
+
+        setProgress('שומר…');
+        fd.set('path', up.path);
+        fd.set('bytes', String(chosen.size));
         if (dims.current) {
-          fd.set('width', String(dims.current.w));
-          fd.set('height', String(dims.current.h));
+          fd.set('width', String(dims.current.width));
+          fd.set('height', String(dims.current.height));
         }
-        const r = await runAction(() => uploadPhoto(fd)) as ActionResult;
+        const r = await runAction(() => commitPhoto(fd)) as ActionResult;
+        setProgress(null);
         onDone(r);
-        if (r.ok) { formRef.current?.reset(); setPreview(null); setWarn(null); }
+        if (r.ok) {
+          formRef.current?.reset();
+          setPreview(null);
+          setWarn(null);
+          file.current = null;
+        }
       })}
     >
       <div>
@@ -78,7 +102,7 @@ function Uploader({ onDone }: { onDone: (r: ActionResult) => void }) {
           name="photo"
           required
           accept={GALLERY_IMAGE_SPEC.formats.join(',')}
-          onChange={(e) => pick(e.target.files?.[0])}
+          onChange={(e) => void pick(e.target.files?.[0])}
           className="mt-2 block w-full text-[.78rem] file:me-2 file:rounded-input file:border-0 file:bg-accent-soft file:px-3 file:py-1.5 file:text-accent-strong"
         />
       </div>
@@ -107,10 +131,11 @@ function Uploader({ onDone }: { onDone: (r: ActionResult) => void }) {
           </p>
         )}
 
-        <div className="col-span-2 max-[560px]:col-span-1">
+        <div className="col-span-2 flex items-center gap-3 max-[560px]:col-span-1">
           <button type="submit" className="btn btn-accent btn-sm" disabled={pending}>
             {pending ? 'מעלה…' : 'העלאה'}
           </button>
+          {progress && <span className="text-[.8rem] text-fg-muted">{progress}</span>}
         </div>
       </div>
     </form>

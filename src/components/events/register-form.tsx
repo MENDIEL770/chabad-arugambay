@@ -271,7 +271,7 @@ export function RegisterForm({ event }: { event: EventRecord }) {
             <div>
               <h2 className="font-bold">שמות המשתתפים</h2>
               <p className="mt-0.5 text-[.8rem] text-fg-muted">
-                באנגלית כמו בדרכון — זה מה שנרשם בכניסה.
+                השם המלא של כל משתתף — זה מה שנרשם בכניסה.
               </p>
             </div>
 
@@ -314,18 +314,26 @@ export function RegisterForm({ event }: { event: EventRecord }) {
                   return (
                     <div key={i} className="flex gap-2 max-[520px]:flex-col">
                       <input
-                        className="field ltr flex-1"
+                        className="field flex-1"
+                        // Per-field direction: a Hebrew name aligns right, a
+                        // Latin one left. Forcing ltr on the whole box put
+                        // Hebrew names against the wrong edge.
+                        dir="auto"
                         value={n.first}
                         onChange={(e) => setNameAt(group.mealId, i, { first: e.target.value })}
-                        placeholder="First name"
+                        placeholder="שם פרטי"
                         aria-label={`שם פרטי של משתתף ${i + 1}`}
                         autoComplete="off"
                       />
                       <input
-                        className="field ltr flex-1"
+                        className="field flex-1"
+                        // Per-field direction: a Hebrew name aligns right, a
+                        // Latin one left. Forcing ltr on the whole box put
+                        // Hebrew names against the wrong edge.
+                        dir="auto"
                         value={n.last}
                         onChange={(e) => setNameAt(group.mealId, i, { last: e.target.value })}
-                        placeholder="Last name"
+                        placeholder="שם משפחה"
                         aria-label={`שם משפחה של משתתף ${i + 1}`}
                         autoComplete="off"
                       />

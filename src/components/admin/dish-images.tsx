@@ -4,9 +4,12 @@ import Image from 'next/image';
 import { useRef, useState, useTransition } from 'react';
 import { Icon } from '@/components/ui/icon';
 import type { DishImage } from '@/lib/data/types';
-import { deleteDishImage, moveDishImage, uploadDishImage,
+import { commitDishImage, deleteDishImage, moveDishImage,
   type ActionResult,
 } from '@/app/admin/restaurant/menu/image-actions';
+import { createUploadTicket, type Ticket } from '@/app/admin/upload-actions';
+import { measureImage, uploadToTicket } from '@/lib/upload';
+import { runAction } from '@/lib/run-action';
 import { DISH_IMAGE_SPEC } from '@/lib/spec/dish-image';
 
 /**
@@ -41,20 +44,24 @@ export function DishImages({
       // One at a time: the order they were chosen becomes the order shown,
       // and a single failure does not take the rest of the batch with it.
       for (const file of list) {
-        const dims = await new Promise<{ w: number; h: number } | null>((resolve) => {
-          const url = URL.createObjectURL(file);
-          const img = new window.Image();
-          img.onload = () => { URL.revokeObjectURL(url); resolve({ w: img.naturalWidth, h: img.naturalHeight }); };
-          img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
-          img.src = url;
-        });
+        const dims = await measureImage(file);
+
+        // Ask, upload, then record. A row written before the bytes land is
+        // a broken image forever.
+        const ticket = await runAction(() =>
+          createUploadTicket('dish', file.type, file.size, itemId));
+        if (!ticket.ok) { onResult(ticket as ActionResult); break; }
+
+        const up = await uploadToTicket(ticket as Ticket, file);
+        if (!up.ok) { onResult(up); break; }
 
         const fd = new FormData();
         fd.set('itemId', itemId);
-        fd.set('image', file);
-        if (dims) { fd.set('width', String(dims.w)); fd.set('height', String(dims.h)); }
+        fd.set('path', up.path);
+        fd.set('bytes', String(file.size));
+        if (dims) { fd.set('width', String(dims.width)); fd.set('height', String(dims.height)); }
 
-        const r = await uploadDishImage(fd);
+        const r = await runAction(() => commitDishImage(fd)) as ActionResult;
         if (!r.ok) { onResult(r); break; }
         onResult(r);
       }

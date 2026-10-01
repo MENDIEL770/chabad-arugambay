@@ -35,21 +35,6 @@ export function PhoneField({
       <span className="label">{label}</span>
 
       <div className="flex gap-2">
-        <select
-          aria-label="קידומת מדינה"
-          className="field !w-auto shrink-0"
-          value={country.iso}
-          onChange={(e) =>
-            setCountry(COUNTRIES.find((c) => c.iso === e.target.value) ?? DEFAULT_COUNTRY)
-          }
-        >
-          {COUNTRIES.map((c) => (
-            <option key={c.iso} value={c.iso}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-
         <input
           className="field ltr flex-1"
           type="tel"
@@ -64,6 +49,21 @@ export function PhoneField({
           aria-invalid={showError || undefined}
           required={required}
         />
+
+        <select
+          aria-label="קידומת מדינה"
+          className="field !w-auto shrink-0"
+          value={country.iso}
+          onChange={(e) =>
+            setCountry(COUNTRIES.find((c) => c.iso === e.target.value) ?? DEFAULT_COUNTRY)
+          }
+        >
+          {COUNTRIES.map((c) => (
+            <option key={c.iso} value={c.iso}>
+              {c.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* One canonical value for the server; the two visible controls are
