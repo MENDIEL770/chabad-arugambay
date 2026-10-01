@@ -249,23 +249,6 @@ export function RegisterForm({ event }: { event: EventRecord }) {
 
       {/* ---------------------------------------------------- 2. details */}
       <div hidden={step !== 1} className="flex flex-col gap-4">
-        <div className="card flex flex-col gap-3">
-          <h2 className="font-bold">מי נרשם</h2>
-          <label>
-            <span className="label">שם מלא</span>
-            <input className="field" name="name" required={step === 1} minLength={2} />
-          </label>
-          <PhoneField required={step === 1} hint="לשם נשלח את אישור ההרשמה." />
-          <label>
-            <span className="label">מייל (לא חובה)</span>
-            <input className="field ltr" name="email" type="email" />
-          </label>
-          <label>
-            <span className="label">מאיפה אתם? (לא חובה)</span>
-            <input className="field" name="nationality" placeholder="ישראל" />
-          </label>
-        </div>
-
         {seatsByMeal.length > 0 && (
           <div className="card flex flex-col gap-4">
             <div>
@@ -350,6 +333,28 @@ export function RegisterForm({ event }: { event: EventRecord }) {
             )}
           </div>
         )}
+
+        <div className="card flex flex-col gap-3">
+          <div>
+            <h2 className="font-bold">על שם מי ההזמנה</h2>
+            <p className="mt-0.5 text-[.8rem] text-fg-muted">
+              איש הקשר להרשמה — לשם יישלח האישור.
+            </p>
+          </div>
+          <label>
+            <span className="label">שם מלא</span>
+            <input className="field" name="name" required={step === 1} minLength={2} />
+          </label>
+          <PhoneField required={step === 1} hint="לשם נשלח את אישור ההרשמה." />
+          <label>
+            <span className="label">מייל (לא חובה)</span>
+            <input className="field ltr" name="email" type="email" />
+          </label>
+          <label>
+            <span className="label">מאיפה אתם? (לא חובה)</span>
+            <input className="field" name="nationality" placeholder="ישראל" />
+          </label>
+        </div>
 
         <label className="card">
           <span className="label">הערות (אלרגיות, שאלות)</span>
