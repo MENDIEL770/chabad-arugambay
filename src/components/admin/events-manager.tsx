@@ -82,10 +82,15 @@ export function EventsManager({
                   <span className="clock font-bold">{count}</span>
                 </div>
 
-                <Link href={`/f/${e.slug}`} className="btn btn-ghost btn-sm">
-                  <Icon name="arrow" size={14} />
-                  לטופס
-                </Link>
+                <div className="flex gap-2">
+                  <Link href={`/admin/events/${e.id}`} className="btn btn-accent btn-sm">
+                    נרשמים
+                  </Link>
+                  <Link href={`/f/${e.slug}`} className="btn btn-ghost btn-sm">
+                    <Icon name="arrow" size={14} />
+                    לטופס
+                  </Link>
+                </div>
               </li>
             );
           })}

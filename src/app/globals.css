@@ -235,3 +235,23 @@ body {
     transition: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Print. The registration sheet goes to the kitchen, so it should carry
+   counts and names and nothing else — no navigation, no money, no phone
+   numbers on a page that gets left on a counter.
+--------------------------------------------------------------------------- */
+@media print {
+  header, aside, nav, footer, .btn { display: none !important; }
+  [data-reveal] { opacity: 1 !important; transform: none !important; }
+
+  body { background: #fff !important; color: #000 !important; }
+
+  /* Borders survive the printer's colour handling better than fills. */
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  thead { display: table-header-group; }
+
+  main { padding: 0 !important; }
+  .wrap { max-width: none !important; padding: 0 !important; }
+}

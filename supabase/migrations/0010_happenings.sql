@@ -15,6 +15,9 @@ create table happenings (
   -- Free text such as "for men" or "whole family", written in the admin.
   -- Kept out of this file as a literal: Hebrew in a .sql is corrupted by a
   -- clipboard round-trip, which already happened once on this project.
+  -- Free text such as "for men" or "whole family", written in the admin.
+  -- Kept out of this file as a literal: Hebrew in a .sql is corrupted by a
+  -- clipboard round-trip, which already happened once on this project.
   audience   jsonb not null default '{}'::jsonb,
   location   jsonb not null default '{}'::jsonb,
 
