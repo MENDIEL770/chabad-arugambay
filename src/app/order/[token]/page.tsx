@@ -59,7 +59,7 @@ export default async function OrderPage({ params }: PageProps<'/order/[token]'>)
   const wa = `https://wa.me/${TENANT.whatsapp.replace(/[^\d]/g, '')}`;
 
   return (
-    <main className="wrap flex-1 py-12">
+    <main id="main" className="wrap flex-1 py-12">
       <div className="mx-auto max-w-[560px]">
         <p className="eyebrow">הזמנה</p>
         <h1 className="mt-2 flex items-baseline gap-3 text-[clamp(1.8rem,4vw,2.4rem)] font-bold tracking-[-.02em]">

@@ -1,4 +1,6 @@
 import { TENANT } from '@/lib/config';
+import { siteUrl } from '@/lib/site-url';
+import { getHeroSlides } from '@/lib/data/hero';
 import type { Metadata } from 'next';
 import { Rubik, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
@@ -22,21 +24,63 @@ const mono = IBM_Plex_Mono({
   display: 'swap',
 });
 
-export const metadata: Metadata = {
-  // Template so every page reads "<page> · בית חב״ד ארוגם ביי – סרי לנקה".
-  title: {
-    default: `${TENANT.name.he} – ${TENANT.region.he} · ${TENANT.tagline.he}`,
-    template: `%s · ${TENANT.name.he} – ${TENANT.region.he}`,
-  },
-  description:
-    'בית חב״ד ארוגם ביי, סרי לנקה — הבית שלך במזרח. סעודות שבת וחג, מסעדה כשרה, ' +
-    'משלוחים, והמלצות למטיילים.',
-};
-
 /**
- * Applies the saved theme before the first paint. Inline and synchronous on
- * purpose: anything deferred lets the wrong theme show for a frame.
+ * Share cards.
+ *
+ * A link to this site is most often pasted into a WhatsApp group, and
+ * without openGraph that arrives as a grey line of text. The picture is the
+ * house's own hero image rather than a generated card: next/og cannot embed
+ * a Hebrew font in the serverless runtime, so generated text would render
+ * as boxes — and a photograph of the place is better than a text card
+ * anyway.
+ *
+ * generateMetadata rather than a constant, because the image comes from the
+ * database and the shliach can change it.
  */
+export async function generateMetadata(): Promise<Metadata> {
+  const base = siteUrl();
+
+  let image: string | null = null;
+  try {
+    const slides = await getHeroSlides();
+    image = slides.find((s) => s.imageUrl)?.imageUrl ?? null;
+  } catch {
+    // A share card without a picture still works; a crashed layout does not.
+  }
+
+  const title = `${TENANT.name.he} – ${TENANT.region.he} · ${TENANT.tagline.he}`;
+  const description =
+    'בית חב״ד ארוגם ביי, סרי לנקה — הבית שלך במזרח. סעודות שבת וחג, מסעדה כשרה, ' +
+    'משלוחים, והמלצות למטיילים.';
+
+  return {
+    // Absolute URLs come from here; a relative one silently produces no
+    // preview rather than an error.
+    metadataBase: new URL(base),
+    title: {
+      default: title,
+      template: `%s · ${TENANT.name.he} – ${TENANT.region.he}`,
+    },
+    description,
+    openGraph: {
+      type: 'website',
+      locale: 'he_IL',
+      siteName: TENANT.name.he,
+      title,
+      description,
+      url: base,
+      ...(image ? { images: [{ url: image, width: 1200, height: 630 }] } : {}),
+    },
+    twitter: {
+      card: image ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      ...(image ? { images: [image] } : {}),
+    },
+    alternates: { canonical: base },
+  };
+}
+
 const THEME_BOOTSTRAP = `try{
 var r=document.documentElement;
 var t=localStorage.getItem('theme');
@@ -73,6 +117,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         </noscript>
         {children}
         <FloatingWhatsApp />
+        <a href="#main" className="skip-link">דילוג לתוכן</a>
         <AccessibilityMenu />
       </body>
     </html>

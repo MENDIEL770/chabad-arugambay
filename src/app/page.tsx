@@ -123,7 +123,7 @@ export default async function HomePage() {
         statusLabel={cal.status.label}
         closures={cal.closures} week={cal.week} />
 
-      <main className="flex-1">
+      <main id="main" className="flex-1">
         {slides.length > 0 ? (
           <HeroCarousel slides={slides}>
             <HeroCopy cal={cal} copy={copy} onImage />

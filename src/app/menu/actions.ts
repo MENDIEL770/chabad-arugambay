@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
 import { hasSupabase, TENANT_ID } from '@/lib/config';
+import { throttle, ORDER_LIMIT } from '@/lib/rate-limit';
 
 /**
  * PUBLIC ACTION — intentionally not behind requireRole().
@@ -121,6 +122,12 @@ export async function placeOrder(input: OrderInput): Promise<PlaceOrderResult> {
     .eq('tenant_id', TENANT_ID)
     .eq('customer_phone', v.phone)
     .in('status', ['received', 'accepted', 'preparing', 'ready', 'dispatched']);
+
+  // Counted per device as well as per phone, in a fixed time window. The
+  // open-order cap below is a different rule — it stops one customer
+  // queueing ten meals — and neither covers the other.
+  const limited = await throttle(ORDER_LIMIT, v.phone);
+  if (limited) return { ok: false, message: limited };
 
   if ((count ?? 0) >= MAX_OPEN_ORDERS_PER_PHONE) {
     return {

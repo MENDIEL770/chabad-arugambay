@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
 import { hasSupabase, TENANT_ID } from '@/lib/config';
+import { throttle, REGISTRATION_LIMIT } from '@/lib/rate-limit';
 
 /**
  * PUBLIC ACTION — intentionally not behind requireRole().
@@ -12,7 +13,10 @@ import { hasSupabase, TENANT_ID } from '@/lib/config';
  *     every line from registrant_types.
  *   - Capacity is re-checked inside the writing transaction, with the meal
  *     rows locked, so two people cannot take the same last seat.
- *   - A per-phone rate limit stops one browser filling an event with junk.
+ *   - A per-phone cap stops one guest booking the same event repeatedly.
+ *   - A throttle keyed on the caller as well as the phone, in a fixed
+ *     window, stops the form being scripted — the cap alone could not,
+ *     since a different number sidesteps it.
  */
 
 const MAX_OPEN_PER_PHONE = 4;
@@ -97,6 +101,11 @@ export async function register(input: RegisterInput): Promise<RegisterResult> {
     .eq('event_id', v.eventId)
     .eq('phone', v.phone)
     .in('state', ['pending', 'confirmed']);
+
+  // Keyed on the caller as well as the phone: the open-registration cap
+  // below resets as events pass, and a different phone number sidesteps it.
+  const limited = await throttle(REGISTRATION_LIMIT, v.phone);
+  if (limited) return { ok: false, message: limited };
 
   if ((count ?? 0) >= MAX_OPEN_PER_PHONE) {
     return {

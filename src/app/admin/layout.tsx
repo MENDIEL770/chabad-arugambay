@@ -57,7 +57,7 @@ export default async function AdminLayout({ children }: LayoutProps<'/admin'>) {
 
       <div className="wrap flex flex-1 gap-8 max-[900px]:gap-0">
         <AdminSidebar />
-        <main className="min-w-0 flex-1 py-6">{children}</main>
+        <main id="main" className="min-w-0 flex-1 py-6">{children}</main>
       </div>
     </div>
   );

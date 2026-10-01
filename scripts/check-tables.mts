@@ -39,6 +39,9 @@ const FUNCTIONS: Record<string, { name: string; args: Record<string, unknown> }[
   '0007_events': [
     { name: 'registration_tracking', args: { p_token: 'probe' } },
   ],
+  '0020_rate_limit': [
+    { name: 'bump_rate_limit', args: { p_tenant: '00000000-0000-0000-0000-000000000001', p_bucket: 'probe', p_key: '', p_limit: 1, p_window_sec: 60 } },
+  ],
   '0011_printing': [
     { name: 'claim_print_job', args: { p_token: 'probe' } },
   ],
@@ -77,6 +80,7 @@ const BY_MIGRATION: Record<string, string[]> = {
   '0016_travel':        ['stays', 'tips'],
   '0017_event_template':['event_template'],
   '0018_messages':      ['message_templates', 'message_log'],
+  '0020_rate_limit':    ['rate_limit_hits'],
 };
 
 /** A function that exists raises its own error; a missing one says so. */

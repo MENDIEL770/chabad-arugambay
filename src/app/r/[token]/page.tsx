@@ -38,7 +38,7 @@ export default async function RegistrationPage({ params }: PageProps<'/r/[token]
   const cancelled = reg.state === 'cancelled';
 
   return (
-    <main className="wrap flex-1 py-12">
+    <main id="main" className="wrap flex-1 py-12">
       <div className="mx-auto max-w-[560px]">
         <div className="grid size-12 place-items-center rounded-full bg-accent text-fg-on-accent">
           <Icon name="candle" size={24} />

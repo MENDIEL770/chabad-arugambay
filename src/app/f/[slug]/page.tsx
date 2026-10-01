@@ -47,7 +47,7 @@ export default async function RegisterPage({ params }: PageProps<'/f/[slug]'>) {
         statusLabel={cal.status.label}
         closures={cal.closures} week={cal.week} />
 
-      <main className="wrap flex-1 py-12">
+      <main id="main" className="wrap flex-1 py-12">
         <div className="mx-auto mb-8 max-w-[620px]">
           <span className="eyebrow">הרשמה</span>
           <h1 className="mt-2 mb-3 text-balance text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-[-.02em]">
