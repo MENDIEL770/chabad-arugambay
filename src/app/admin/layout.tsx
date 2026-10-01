@@ -6,6 +6,8 @@ import { signOut } from './login/actions';
 const MODULES = [
   { href: '/admin/events', label: 'אירועים' },
   { href: '/admin/restaurant/menu', label: 'מסעדה' },
+  { href: '/admin/restaurant/receipt', label: 'קבלה' },
+  { href: '/kitchen', label: 'מסך מטבח' },
   { href: '/admin/orders', label: 'הזמנות' },
   { href: '/admin/settings', label: 'הגדרות' },
   { href: '/admin/settings/hero', label: 'תמונות רקע' },
