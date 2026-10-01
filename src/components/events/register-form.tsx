@@ -9,6 +9,22 @@ import { register, type RegisterInput } from '@/app/f/[slug]/actions';
 import { advanceOnEnter } from '@/lib/form-keyboard';
 
 const DONATIONS = [0, 50, 100, 180, 360];
+
+/**
+ * Serving time as HH:mm in the house's timezone.
+ *
+ * Formatted explicitly rather than with the browser's locale: a visitor
+ * whose phone is still on Israel time would otherwise be shown a meal
+ * three and a half hours out.
+ */
+function mealTime(iso: string): string {
+  return new Intl.DateTimeFormat('he-IL', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Colombo',
+    hour12: false,
+  }).format(new Date(iso));
+}
 const STEPS = ['סעודות', 'פרטים', 'אישור'] as const;
 
 export function RegisterForm({ event }: { event: EventRecord }) {
@@ -16,7 +32,14 @@ export function RegisterForm({ event }: { event: EventRecord }) {
   const [step, setStep] = useState(0);
   const [qty, setQty] = useState<Record<string, number>>({});
   const [donation, setDonation] = useState(0);
-  const [names, setNames] = useState<string[]>([]);
+  /**
+   * Names are keyed by meal, because the same two people usually eat at
+   * both and the form should not ask twice. `sameForAll` is on by default
+   * and mirrors the first meal's names onto the rest; turning it off
+   * reveals a separate set per meal.
+   */
+  const [sameForAll, setSameForAll] = useState(true);
+  const [names, setNames] = useState<Record<string, { first: string; last: string }[]>>({});
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,11 +52,55 @@ export function RegisterForm({ event }: { event: EventRecord }) {
   const mealsTotal = chosen.reduce((s, t) => s + t.priceIls * qty[t.id], 0);
   const total = mealsTotal + donation;
 
-  /** Seats, not people: an infant takes none, so it needs no name row. */
-  const nameCount = chosen.reduce(
-    (s, t) => s + (t.seats > 0 ? qty[t.id] : 0),
-    0,
-  );
+  /**
+   * How many names each meal needs. Seats, not rows: an infant takes none,
+   * so it needs no name. Crucially this is PER MEAL — summing across meals
+   * asked for four names when two people were eating twice.
+   */
+  const seatsByMeal = useMemo(() => {
+    const out: { mealId: string; mealName: string; servesAt: string | null; seats: number }[] = [];
+    for (const meal of event.meals) {
+      const seats = meal.types.reduce(
+        (sum, t) => sum + (t.seats > 0 ? (qty[t.id] ?? 0) * t.seats : 0),
+        0,
+      );
+      if (seats > 0) {
+        out.push({ mealId: meal.id, mealName: meal.name.he, servesAt: meal.servesAt, seats });
+      }
+    }
+    return out;
+  }, [event.meals, qty]);
+
+  /** With the switch on, one list serves every meal: the largest sitting. */
+  const sharedSeats = seatsByMeal.reduce((m, x) => Math.max(m, x.seats), 0);
+
+  function nameAt(mealId: string, i: number) {
+    return names[mealId]?.[i] ?? { first: '', last: '' };
+  }
+
+  function setNameAt(mealId: string, i: number, patch: Partial<{ first: string; last: string }>) {
+    setNames((prev) => {
+      const list = [...(prev[mealId] ?? [])];
+      list[i] = { ...(list[i] ?? { first: '', last: '' }), ...patch };
+      return { ...prev, [mealId]: list };
+    });
+  }
+
+  const SHARED = '__shared__';
+
+  /** Every required name, filled in. Blocks the step rather than the submit. */
+  const namesComplete = useMemo(() => {
+    const need = sameForAll
+      ? [{ mealId: SHARED, seats: sharedSeats }]
+      : seatsByMeal.map((m) => ({ mealId: m.mealId, seats: m.seats }));
+
+    return need.every(({ mealId, seats }) =>
+      Array.from({ length: seats }, (_, i) => nameAt(mealId, i)).every(
+        (n) => n.first.trim().length > 1 && n.last.trim().length > 1,
+      ),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [names, sameForAll, sharedSeats, seatsByMeal]);
 
   function bump(typeId: string, delta: number, max: number) {
     setQty((q) => {
@@ -58,9 +125,17 @@ export function RegisterForm({ event }: { event: EventRecord }) {
       notes: String(formData.get('notes') ?? '') || undefined,
       donation,
       lines: chosen.map((t) => ({ typeId: t.id, qty: qty[t.id] })),
-      participants: names
-        .filter((n) => n.trim().length > 0)
-        .map((n) => ({ fullName: n.trim(), isChild: false })),
+      // One row per person per meal, which is what the kitchen sheet needs.
+      participants: seatsByMeal.flatMap((meal) =>
+        Array.from({ length: meal.seats }, (_, i) => {
+          const n = nameAt(sameForAll ? SHARED : meal.mealId, i);
+          return {
+            mealId: meal.mealId,
+            fullName: `${n.first.trim()} ${n.last.trim()}`.trim(),
+            isChild: false,
+          };
+        }).filter((p) => p.fullName.length > 0),
+      ),
     };
 
     const result = await register(payload);
@@ -95,6 +170,11 @@ export function RegisterForm({ event }: { event: EventRecord }) {
             <section key={meal.id} className="card">
               <div className="mb-3 flex flex-wrap items-baseline gap-2">
                 <h2 className="font-bold">{meal.name.he}</h2>
+                {meal.servesAt && (
+                  <span className="clock text-[.82rem] font-normal text-fg-subtle">
+                    {mealTime(meal.servesAt)}
+                  </span>
+                )}
                 {!meal.isOpen && <span className="chip chip-out">סגורה</span>}
                 {full && <span className="chip chip-out">מלאה</span>}
                 {meal.seatsLeft !== null && meal.seatsLeft > 0 && meal.seatsLeft <= 8 && (
@@ -154,14 +234,7 @@ export function RegisterForm({ event }: { event: EventRecord }) {
           type="button"
           className="btn btn-accent btn-lg justify-center"
           disabled={chosen.length === 0}
-          onClick={() => {
-            setNames((prev) => {
-              const next = [...prev];
-              next.length = nameCount;
-              return Array.from(next, (x) => x ?? '');
-            });
-            setStep(1);
-          }}
+          onClick={() => setStep(1)}
         >
           {chosen.length === 0 ? 'בחרו סעודה כדי להמשיך' : 'המשך'}
         </button>
@@ -186,30 +259,80 @@ export function RegisterForm({ event }: { event: EventRecord }) {
           </label>
         </div>
 
-        {nameCount > 0 && (
-          <div className="card flex flex-col gap-3">
+        {seatsByMeal.length > 0 && (
+          <div className="card flex flex-col gap-4">
             <div>
               <h2 className="font-bold">שמות המשתתפים</h2>
               <p className="mt-0.5 text-[.8rem] text-fg-muted">
                 באנגלית כמו בדרכון — זה מה שנרשם בכניסה.
               </p>
             </div>
-            {Array.from({ length: nameCount }, (_, i) => (
-              <input
-                key={i}
-                className="field ltr"
-                value={names[i] ?? ''}
-                onChange={(e) =>
-                  setNames((prev) => {
-                    const next = [...prev];
-                    next[i] = e.target.value;
-                    return next;
-                  })
-                }
-                placeholder={`משתתף ${i + 1}`}
-                aria-label={`שם משתתף ${i + 1}`}
-              />
+
+            {seatsByMeal.length > 1 && (
+              <label className="flex items-start gap-2.5 rounded-input bg-surface px-3.5 py-3">
+                <input
+                  type="checkbox"
+                  checked={sameForAll}
+                  onChange={(e) => setSameForAll(e.target.checked)}
+                  className="mt-0.5 size-4 shrink-0 accent-[var(--accent)]"
+                />
+                <span>
+                  <span className="block text-[.9rem] font-medium">
+                    אותם אנשים בכל הסעודות
+                  </span>
+                  <span className="block text-[.78rem] text-fg-subtle">
+                    בטלו את הסימון אם מגיעים אנשים אחרים לבוקר.
+                  </span>
+                </span>
+              </label>
+            )}
+
+            {(sameForAll
+              ? [{ mealId: SHARED, mealName: '', servesAt: null, seats: sharedSeats }]
+              : seatsByMeal
+            ).map((group) => (
+              <div key={group.mealId} className="flex flex-col gap-2.5">
+                {!sameForAll && (
+                  <h3 className="flex items-baseline gap-2 text-[.85rem] font-medium text-fg-muted">
+                    {group.mealName}
+                    {group.servesAt && (
+                      <span className="clock text-[.78rem] font-normal text-fg-subtle">
+                        {mealTime(group.servesAt)}
+                      </span>
+                    )}
+                  </h3>
+                )}
+                {Array.from({ length: group.seats }, (_, i) => {
+                  const n = nameAt(group.mealId, i);
+                  return (
+                    <div key={i} className="flex gap-2 max-[520px]:flex-col">
+                      <input
+                        className="field ltr flex-1"
+                        value={n.first}
+                        onChange={(e) => setNameAt(group.mealId, i, { first: e.target.value })}
+                        placeholder="First name"
+                        aria-label={`שם פרטי של משתתף ${i + 1}`}
+                        autoComplete="off"
+                      />
+                      <input
+                        className="field ltr flex-1"
+                        value={n.last}
+                        onChange={(e) => setNameAt(group.mealId, i, { last: e.target.value })}
+                        placeholder="Last name"
+                        aria-label={`שם משפחה של משתתף ${i + 1}`}
+                        autoComplete="off"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             ))}
+
+            {!namesComplete && (
+              <p className="text-[.8rem] text-fg-subtle">
+                צריך שם פרטי ושם משפחה לכל משתתף כדי להמשיך.
+              </p>
+            )}
           </div>
         )}
 
@@ -225,6 +348,7 @@ export function RegisterForm({ event }: { event: EventRecord }) {
           <button
             type="button"
             className="btn btn-accent flex-1 justify-center"
+            disabled={!namesComplete}
             onClick={() => setStep(2)}
           >
             המשך

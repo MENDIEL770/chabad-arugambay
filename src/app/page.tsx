@@ -14,6 +14,7 @@ import { ServiceCards } from '@/components/site/service-cards';
 import { DishThumb } from '@/components/menu/dish-thumb';
 import { AboutSection } from '@/components/site/about-section';
 import { ContactSection } from '@/components/site/contact-section';
+import { DeliveryRide } from '@/components/site/delivery-ride';
 import { GalleryStrip } from '@/components/site/gallery-strip';
 import { getAbout, getGallery } from '@/lib/data/gallery';
 import { Icon } from '@/components/ui/icon';
@@ -209,6 +210,10 @@ export default async function HomePage() {
             </ul>
           </div>
         </section>
+        <div className="wrap">
+          <DeliveryRide />
+        </div>
+
         {featured.length > 0 && <GalleryStrip items={featured} />}
 
         <AboutSection about={about} />
