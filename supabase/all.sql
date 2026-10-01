@@ -2440,22 +2440,31 @@ alter table tips add column if not exists image_path text;
 -- These names are the order statuses the app already uses, not a parallel
 -- vocabulary. A translation layer between "dispatched" and "on_the_way"
 -- would be one more place for the two to drift apart.
-create type message_event as enum (
-  'order_received',      -- the customer just placed an order
-  'order_accepted',      -- the kitchen took it
-  'order_ready',         -- ready for pickup / handed to the courier
-  'order_dispatched',    -- a courier has it
-  'order_delivered',
-  'order_rejected',
-  'registration_received',  -- signed up for a Shabbat meal
-  'registration_confirmed',
-  'registration_reminder',  -- the day before
-  'shabbat_times'           -- the weekly candle-lighting message
-);
+--
+-- Guarded because Postgres has no "create type if not exists", and Supabase
+-- runs the whole editor buffer in one transaction: a second run would fail
+-- on this line and roll back everything after it, including migrations that
+-- had never been applied.
+do $$ begin
+  create type message_event as enum (
+    'order_received',      -- the customer just placed an order
+    'order_accepted',      -- the kitchen took it
+    'order_ready',         -- ready for pickup / handed to the courier
+    'order_dispatched',    -- a courier has it
+    'order_delivered',
+    'order_rejected',
+    'registration_received',  -- signed up for a Shabbat meal
+    'registration_confirmed',
+    'registration_reminder',  -- the day before
+    'shabbat_times'           -- the weekly candle-lighting message
+  );
+exception when duplicate_object then null; end $$;
 
-create type message_channel as enum ('whatsapp', 'email');
+do $$ begin
+  create type message_channel as enum ('whatsapp', 'email');
+exception when duplicate_object then null; end $$;
 
-create table message_templates (
+create table if not exists message_templates (
   id         uuid primary key default gen_random_uuid(),
   tenant_id  uuid not null references tenants(id) on delete cascade,
 
@@ -2485,6 +2494,7 @@ create table message_templates (
   unique (tenant_id, event, channel)
 );
 
+drop trigger if exists t_msg_templates_touch on message_templates;
 create trigger t_msg_templates_touch before update on message_templates
   for each row execute function touch_updated_at();
 
@@ -2495,7 +2505,7 @@ create trigger t_msg_templates_touch before update on message_templates
  * after a complaint is always "did we actually message them", and an empty
  * answer is indistinguishable from a provider outage without this.
  */
-create table message_log (
+create table if not exists message_log (
   id         uuid primary key default gen_random_uuid(),
   tenant_id  uuid not null references tenants(id) on delete cascade,
 
@@ -2517,8 +2527,8 @@ create table message_log (
   created_at timestamptz not null default now()
 );
 
-create index on message_log (tenant_id, created_at desc);
-create index on message_log (order_id) where order_id is not null;
+create index if not exists message_log_recent on message_log (tenant_id, created_at desc);
+create index if not exists message_log_by_order on message_log (order_id) where order_id is not null;
 
 -- ------------------------------------------------------------------- rls
 
@@ -2527,11 +2537,44 @@ alter table message_log       enable row level security;
 
 -- Templates and the log are staff-only in both directions. Nothing here is
 -- public: the log contains customer phone numbers.
+drop policy if exists msg_templates_rw on message_templates;
 create policy msg_templates_rw on message_templates
   for all using (app_can(tenant_id, 'staff')) with check (app_can(tenant_id, 'staff'));
 
+drop policy if exists msg_log_read on message_log;
 create policy msg_log_read on message_log
   for select using (app_can(tenant_id, 'staff'));
+
+-- ------------------------------------------------------- sanity
+
+/**
+ * The guarded create above skips silently when the type already exists.
+ * That is what makes the script re-runnable, but it would also hide an
+ * enum left over from an earlier draft with different labels — and a
+ * missing label only shows up later as a failed insert during a real
+ * order. Fail loudly here instead.
+ */
+do $$
+declare missing text;
+begin
+  select string_agg(w, ', ') into missing
+  from unnest(array[
+    'order_received','order_accepted','order_ready','order_dispatched',
+    'order_delivered','order_rejected','registration_received',
+    'registration_confirmed','registration_reminder','shabbat_times'
+  ]) as w
+  where not exists (
+    select 1 from pg_enum e
+    join pg_type t on t.oid = e.enumtypid
+    where t.typname = 'message_event' and e.enumlabel = w
+  );
+
+  if missing is not null then
+    raise exception
+      'message_event is missing: %. Drop the type and re-run: drop type message_event cascade;',
+      missing;
+  end if;
+end $$;
 
 -- ============ supabase/migrations/0019_happening_days.sql ============
 
@@ -2560,16 +2603,19 @@ alter table happenings drop constraint if exists weekly_needs_weekday;
 alter table happenings drop constraint if exists monthly_needs_weekday;
 alter table happenings drop column if exists weekday;
 
+alter table happenings drop constraint if exists weekly_needs_days;
 alter table happenings
   add constraint weekly_needs_days
   check (cycle <> 'weekly' or cardinality(weekdays) > 0);
 
+alter table happenings drop constraint if exists monthly_needs_days;
 alter table happenings
   add constraint monthly_needs_days
   check (cycle <> 'monthly' or (cardinality(weekdays) > 0 and week_of_month is not null));
 
 -- 0 = Sunday through 6 = Saturday, the way JavaScript and Postgres both
 -- count. An out-of-range day would silently never match.
+alter table happenings drop constraint if exists weekdays_in_range;
 alter table happenings
   add constraint weekdays_in_range
   check (weekdays <@ array[0,1,2,3,4,5,6]);

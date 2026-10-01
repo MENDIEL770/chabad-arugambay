@@ -23,16 +23,19 @@ alter table happenings drop constraint if exists weekly_needs_weekday;
 alter table happenings drop constraint if exists monthly_needs_weekday;
 alter table happenings drop column if exists weekday;
 
+alter table happenings drop constraint if exists weekly_needs_days;
 alter table happenings
   add constraint weekly_needs_days
   check (cycle <> 'weekly' or cardinality(weekdays) > 0);
 
+alter table happenings drop constraint if exists monthly_needs_days;
 alter table happenings
   add constraint monthly_needs_days
   check (cycle <> 'monthly' or (cardinality(weekdays) > 0 and week_of_month is not null));
 
 -- 0 = Sunday through 6 = Saturday, the way JavaScript and Postgres both
 -- count. An out-of-range day would silently never match.
+alter table happenings drop constraint if exists weekdays_in_range;
 alter table happenings
   add constraint weekdays_in_range
   check (weekdays <@ array[0,1,2,3,4,5,6]);
