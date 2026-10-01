@@ -5,7 +5,7 @@ import { Icon } from '@/components/ui/icon';
 import {
   describeWhen, KIND_LABEL, WEEKDAYS,
   type Happening, type HappeningCycle, type HappeningKind,
-} from '@/lib/data/happenings';
+} from '@/lib/data/happenings-view';
 import { RichTextField } from '@/components/admin/rich-text-field';
 import { runAction } from '@/lib/run-action';
 import {
