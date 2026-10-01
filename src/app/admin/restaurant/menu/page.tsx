@@ -7,7 +7,7 @@ export default async function AdminMenuPage() {
   const menu = await getMenu();
 
   return (
-    <div className="wrap">
+    <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-[-.015em]">תפריט</h1>
         <p className="mt-1 text-sm text-fg-muted">

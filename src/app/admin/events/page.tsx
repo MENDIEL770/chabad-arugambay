@@ -28,7 +28,7 @@ export default async function AdminEventsPage() {
   const [events, counts] = await Promise.all([getOpenEvents(), countsByEvent()]);
 
   return (
-    <div className="wrap">
+    <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-[-.015em]">אירועים</h1>
         <p className="mt-1 max-w-[64ch] text-sm text-fg-muted">

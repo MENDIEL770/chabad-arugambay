@@ -7,7 +7,7 @@ export default async function SiteTextPage() {
   const overrides = await getSiteText();
 
   return (
-    <div className="wrap">
+    <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-[-.015em]">טקסטים באתר</h1>
         <p className="mt-1 max-w-[64ch] text-sm text-fg-muted">

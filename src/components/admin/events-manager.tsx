@@ -6,6 +6,7 @@ import { DateTime } from 'luxon';
 import { Icon } from '@/components/ui/icon';
 import type { EventRecord } from '@/lib/data/events';
 import { generateEvents, type ActionResult } from '@/app/admin/events/actions';
+import { runAction } from '@/lib/run-action';
 
 export function EventsManager({
   events,
@@ -32,7 +33,9 @@ export function EventsManager({
           type="button"
           className="btn btn-accent"
           disabled={pending}
-          onClick={() => start(async () => setResult(await generateEvents(24)))}
+          onClick={() =>
+            start(async () => setResult(await runAction(() => generateEvents(24)) as ActionResult))
+          }
         >
           {pending ? 'פותח…' : 'פתחו 24 מועדים'}
         </button>

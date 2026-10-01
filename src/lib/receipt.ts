@@ -10,6 +10,9 @@ export const PAPER_COLS: Record<number, number> = { 80: 48, 58: 32 };
 export interface ReceiptTemplate {
   headerLines: string[];
   footerLines: string[];
+  logoUrl?: string | null;
+  headerImageUrl?: string | null;
+  footerImageUrl?: string | null;
   showLogo: boolean;
   showQr: boolean;
   showPrices: boolean;
@@ -18,6 +21,9 @@ export interface ReceiptTemplate {
 }
 
 export const DEFAULT_TEMPLATE: ReceiptTemplate = {
+  logoUrl: null,
+  headerImageUrl: null,
+  footerImageUrl: null,
   headerLines: ['בית חב״ד ארוגם ביי', 'Main Street, Arugam Bay', 'Kosher under Chabad supervision'],
   footerLines: ['תודה ובתיאבון!', 'Thank you — see you again'],
   showLogo: true,

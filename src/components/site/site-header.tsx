@@ -3,17 +3,7 @@ import { StatusPill, type Closure } from './status-pill';
 import { ThemeToggle } from './theme-toggle';
 import { TENANT } from '@/lib/config';
 import { Icon } from '@/components/ui/icon';
-
-const NAV = [
-  { href: '/shabbat', label: 'שבתות וחגים' },
-  { href: '/whats-on', label: 'מה קורה' },
-  { href: '/menu', label: 'המסעדה' },
-  { href: '/travel', label: 'טיולים והמלצות' },
-  { href: '/gallery', label: 'גלריה' },
-  { href: '/about', label: 'אודות' },
-  { href: '/articles', label: 'מאמרים' },
-  { href: '/ask', label: 'שאלו אותנו' },
-];
+import { DesktopNav, MobileNav } from './site-nav';
 
 export function SiteHeader({
   statusOpen,
@@ -41,20 +31,11 @@ export function SiteHeader({
           </span>
         </Link>
 
-        <nav className="ms-2 flex gap-1 max-[940px]:hidden">
-          {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="rounded-pill px-3.5 py-2 text-sm font-medium text-fg-muted transition-colors hover:bg-surface hover:text-fg"
-            >
-              {n.label}
-            </Link>
-          ))}
-        </nav>
+        <DesktopNav />
 
         <div className="ms-auto flex items-center gap-2.5">
           <StatusPill initialOpen={statusOpen} initialLabel={statusLabel} closures={closures} />
+          <MobileNav />
           <ThemeToggle />
           <a className="btn btn-accent max-[620px]:px-4" href={wa} target="_blank" rel="noopener noreferrer">
             <Icon name="whatsapp" size={17} />

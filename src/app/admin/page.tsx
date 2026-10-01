@@ -24,7 +24,7 @@ export default async function AdminHome() {
   ];
 
   return (
-    <div className="wrap">
+    <div>
       <h1 className="mb-6 text-2xl font-bold tracking-[-.015em]">סקירה</h1>
 
       <div className="grid grid-cols-4 gap-4 max-[900px]:grid-cols-2 max-[560px]:grid-cols-1">

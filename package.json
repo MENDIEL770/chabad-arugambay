@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check:supabase": "tsx scripts/check-supabase.mts",
-    "check:db": "tsx scripts/check-db.mts"
+    "check:db": "tsx scripts/check-db.mts",
+    "check:tables": "tsx scripts/check-tables.mts"
   },
   "dependencies": {
     "@hebcal/core": "^6.11.0",

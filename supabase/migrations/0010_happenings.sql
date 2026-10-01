@@ -12,7 +12,10 @@ create table happenings (
 
   title      jsonb not null,
   details    jsonb not null default '{}'::jsonb,
-  audience   jsonb not null default '{}'::jsonb,   -- "לגברים", "לכל המשפחה"
+  -- Free text such as "for men" or "whole family", written in the admin.
+  -- Kept out of this file as a literal: Hebrew in a .sql is corrupted by a
+  -- clipboard round-trip, which already happened once on this project.
+  audience   jsonb not null default '{}'::jsonb,
   location   jsonb not null default '{}'::jsonb,
 
   /** weekly: 0=Sunday … 6=Saturday. Null for one-off. */

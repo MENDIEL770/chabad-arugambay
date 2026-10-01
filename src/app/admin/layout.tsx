@@ -2,48 +2,32 @@ import Link from 'next/link';
 import { hasSupabase, TENANT } from '@/lib/config';
 import { getActor } from '@/lib/auth';
 import { signOut } from './login/actions';
-
-const MODULES = [
-  { href: '/admin/events', label: 'אירועים' },
-  { href: '/admin/restaurant/menu', label: 'מסעדה' },
-  { href: '/admin/restaurant/receipt', label: 'קבלה' },
-  { href: '/kitchen', label: 'מסך מטבח' },
-  { href: '/admin/orders', label: 'הזמנות' },
-  { href: '/admin/settings', label: 'הגדרות' },
-  { href: '/admin/settings/text', label: 'טקסטים' },
-  { href: '/admin/settings/hero', label: 'תמונות רקע' },
-];
+import { AdminMobileNav, AdminSidebar } from '@/components/admin/admin-sidebar';
 
 /**
- * Admin shell. Top bar with four modules and horizontal sub-tabs, not a fixed
- * icon rail — the spec calls for the modules to be readable at a glance, and
- * there are only four of them.
+ * Admin shell: a rail on the right, content beside it.
+ *
+ * The top bar held eleven links and had stopped being scannable. A rail has
+ * room to group them by who does the work — kitchen during service versus
+ * site editing once a month — and that grouping is also the shape the
+ * restaurant-only login will take: it gets the first group and nothing else.
  */
 export default async function AdminLayout({ children }: LayoutProps<'/admin'>) {
   const actor = hasSupabase() ? await getActor() : null;
+
   return (
     <div className="flex min-h-full flex-col">
-      <header className="border-b border-line bg-bg">
-        <div className="wrap flex h-16 items-center gap-6">
+      <header className="sticky top-0 z-50 border-b border-line bg-bg">
+        <div className="wrap flex h-16 items-center gap-4">
           <Link href="/admin" className="flex items-center gap-2.5 font-bold whitespace-nowrap">
             <span className="grid size-8 place-items-center rounded-full bg-accent text-sm text-fg-on-accent">
               ח
             </span>
-            <span className="max-[700px]:hidden">{TENANT.name.he}</span>
+            <span className="max-[560px]:hidden">{TENANT.name.he}</span>
             <span className="chip">ניהול</span>
           </Link>
 
-          <nav className="flex gap-1 overflow-x-auto">
-            {MODULES.map((m) => (
-              <Link
-                key={m.href}
-                href={m.href}
-                className="rounded-pill px-4 py-2 text-sm font-medium text-fg-muted whitespace-nowrap transition-colors hover:bg-surface hover:text-fg"
-              >
-                {m.label}
-              </Link>
-            ))}
-          </nav>
+          <AdminMobileNav />
 
           <div className="ms-auto flex items-center gap-2.5">
             {actor && (
@@ -66,21 +50,16 @@ export default async function AdminLayout({ children }: LayoutProps<'/admin'>) {
       {!hasSupabase() && (
         <div className="border-b border-line bg-accent-soft">
           <div className="wrap py-2.5 text-[.84rem]">
-            <b>מצב הדגמה.</b> לא הוגדר חיבור ל-Supabase, אז התפריט נטען מנתוני
-            seed מקומיים. עריכה, מלאי והעלאת תמונות ידרשו{' '}
-            <code className="ltr rounded bg-bg px-1.5 py-0.5 text-[.8em]">
-              NEXT_PUBLIC_SUPABASE_URL
-            </code>{' '}
-            ו-
-            <code className="ltr rounded bg-bg px-1.5 py-0.5 text-[.8em]">
-              SUPABASE_SERVICE_ROLE_KEY
-            </code>
-            .
+            <b>מצב הדגמה.</b> לא הוגדר חיבור ל-Supabase, אז הנתונים נטענים מ-seed
+            מקומי ושמירה לא תעבוד.
           </div>
         </div>
       )}
 
-      <main className="flex-1 bg-surface py-8">{children}</main>
+      <div className="wrap flex flex-1 gap-8 max-[900px]:gap-0">
+        <AdminSidebar />
+        <main className="min-w-0 flex-1 py-6">{children}</main>
+      </div>
     </div>
   );
 }

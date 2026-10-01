@@ -10,7 +10,7 @@ export default async function AdminOrdersPage() {
   const [orders, summary] = await Promise.all([getActiveOrders(), getTodaySummary()]);
 
   return (
-    <div className="wrap">
+    <div>
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-[-.015em]">הזמנות</h1>
