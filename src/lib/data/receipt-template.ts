@@ -10,7 +10,8 @@ import { DEFAULT_TEMPLATE, type ReceiptTemplate } from '@/lib/receipt';
 export async function getReceiptTemplate(): Promise<ReceiptTemplate> {
   if (!hasSupabase()) return DEFAULT_TEMPLATE;
 
-  const { data, error } = await createServiceClient()
+  const sb = createServiceClient();
+  const { data, error } = await sb
     .from('receipt_template')
     .select('*')
     .eq('tenant_id', TENANT_ID)
@@ -21,7 +22,15 @@ export async function getReceiptTemplate(): Promise<ReceiptTemplate> {
   const header = data.header_lines as string[] | null;
   const footer = data.footer_lines as string[] | null;
 
+  const url = (p: unknown) =>
+    typeof p === 'string' && p
+      ? sb.storage.from('receipt').getPublicUrl(p).data.publicUrl
+      : null;
+
   return {
+    logoUrl: url(data.logo_path),
+    headerImageUrl: url(data.header_image_path),
+    footerImageUrl: url(data.footer_image_path),
     // An empty array is a deliberate "no header"; only a missing row falls
     // back to the defaults.
     headerLines: header ?? DEFAULT_TEMPLATE.headerLines,

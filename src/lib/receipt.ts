@@ -56,10 +56,31 @@ export interface ReceiptData {
   trackUrl?: string | null;
 }
 
-function centre(text: string, cols: number): string {
-  const t = text.slice(0, cols);
-  const pad = Math.max(0, Math.floor((cols - visualLength(t)) / 2));
-  return ' '.repeat(pad) + t;
+/**
+ * How a line is laid out.
+ *
+ * A two-column money row has to keep its character grid, so it stays
+ * left-to-right and is padded with spaces. A centred line is prose that may
+ * be Hebrew, so it carries no padding and the direction is decided from its
+ * own content — padding it would place the spaces on the wrong side once
+ * the browser reorders it.
+ *
+ * The printer consumes the same list. A line containing Hebrew has to be
+ * drawn as a raster image, because thermal printers have no Hebrew font;
+ * `hasHebrew` is what tells the print path which ones.
+ */
+export type LineKind = 'centre' | 'row' | 'plain' | 'rule';
+
+export interface RenderedLine {
+  text: string;
+  kind: LineKind;
+  hasHebrew: boolean;
+}
+
+const HEBREW_RE = /[\u0590-\u05FF]/;
+
+function mk(text: string, kind: LineKind): RenderedLine {
+  return { text, kind, hasHebrew: HEBREW_RE.test(text) };
 }
 
 /**
@@ -88,79 +109,85 @@ const money = (n: number) => `${n.toLocaleString('en-US')} LKR`;
  * same thing; the only difference downstream is whether it is drawn to a
  * canvas or sent as ESC/POS.
  */
-export function renderReceipt(t: ReceiptTemplate, d: ReceiptData): string[] {
+export function renderReceipt(t: ReceiptTemplate, d: ReceiptData): RenderedLine[] {
   const cols = PAPER_COLS[t.paperWidth] ?? 48;
   const rule = '='.repeat(cols);
   const thin = '-'.repeat(cols);
-  const out: string[] = [];
+  const out: RenderedLine[] = [];
 
-  for (const line of t.headerLines) out.push(centre(line, cols));
-  out.push(rule);
+  // Centred prose is not padded — see RenderedLine.
+  for (const line of t.headerLines) out.push(mk(line, 'centre'));
+  out.push(mk(rule, 'rule'));
 
-  out.push(row(`#${d.code}`, d.placedAt, cols));
+  out.push(mk(row(`#${d.code}`, d.placedAt, cols), 'row'));
   out.push(
-    row(
-      d.fulfillment === 'dine_in'
-        ? `TABLE ${d.tableNo ?? '?'}`
-        : d.fulfillment === 'delivery'
-          ? 'DELIVERY'
-          : 'PICKUP',
-      d.customerName,
-      cols,
+    mk(
+      row(
+        d.fulfillment === 'dine_in'
+          ? `TABLE ${d.tableNo ?? '?'}`
+          : d.fulfillment === 'delivery'
+            ? 'DELIVERY'
+            : 'PICKUP',
+        d.customerName,
+        cols,
+      ),
+      'row',
     ),
   );
-  out.push(thin);
+  out.push(mk(thin, 'rule'));
 
   for (const l of d.lines) {
     const label = `${l.qty} x ${l.name}`;
-    out.push(t.showPrices ? row(label, money(l.lineTotal), cols) : label.slice(0, cols));
+    out.push(
+      t.showPrices
+        ? mk(row(label, money(l.lineTotal), cols), 'row')
+        : mk(label.slice(0, cols), 'plain'),
+    );
     // Exceptions are indented so they read as belonging to the line above.
-    for (const c of l.changes) out.push(`   ${c}`.slice(0, cols));
-    if (l.note) out.push(`   "${l.note}"`.slice(0, cols));
+    for (const c of l.changes) out.push(mk(`   ${c}`.slice(0, cols), 'plain'));
+    if (l.note) out.push(mk(`   "${l.note}"`.slice(0, cols), 'plain'));
   }
 
   if (t.showPrices) {
-    out.push(thin);
-    out.push(row('Subtotal', money(d.subtotal), cols));
-    if (d.deliveryFee > 0) out.push(row('Delivery', money(d.deliveryFee), cols));
-    out.push(rule);
-    out.push(row('TOTAL', money(d.total), cols));
-    out.push(row('', d.payLabel, cols));
+    out.push(mk(thin, 'rule'));
+    out.push(mk(row('Subtotal', money(d.subtotal), cols), 'row'));
+    if (d.deliveryFee > 0) out.push(mk(row('Delivery', money(d.deliveryFee), cols), 'row'));
+    out.push(mk(rule, 'rule'));
+    out.push(mk(row('TOTAL', money(d.total), cols), 'row'));
+    out.push(mk(row('', d.payLabel, cols), 'row'));
   }
 
-  out.push(rule);
-  for (const line of t.footerLines) out.push(centre(line, cols));
+  out.push(mk(rule, 'rule'));
+  for (const line of t.footerLines) out.push(mk(line, 'centre'));
 
   return out;
 }
 
 /** Kitchen ticket: no money, bigger emphasis on what differs. */
-export function renderKitchenTicket(t: ReceiptTemplate, d: ReceiptData): string[] {
+export function renderKitchenTicket(t: ReceiptTemplate, d: ReceiptData): RenderedLine[] {
   const cols = PAPER_COLS[t.paperWidth] ?? 48;
-  const out: string[] = [];
+  const out: RenderedLine[] = [];
 
-  out.push(centre(`*** ${d.code} ***`, cols));
+  out.push(mk(`*** ${d.code} ***`, 'centre'));
   out.push(
-    centre(
-      d.fulfillment === 'dine_in'
-        ? `TABLE ${d.tableNo ?? '?'}`
-        : d.fulfillment.toUpperCase(),
-      cols,
+    mk(
+      d.fulfillment === 'dine_in' ? `TABLE ${d.tableNo ?? '?'}` : d.fulfillment.toUpperCase(),
+      'centre',
     ),
   );
-  out.push(centre(d.placedAt, cols));
-  out.push('='.repeat(cols));
+  out.push(mk(d.placedAt, 'centre'));
+  out.push(mk('='.repeat(cols), 'rule'));
 
   for (const l of d.lines) {
-    out.push(`${l.qty} x ${l.name}`.slice(0, cols));
-    for (const c of l.changes) out.push(`   >> ${c}`.slice(0, cols));
-    if (l.note) out.push(`   >> "${l.note}"`.slice(0, cols));
-    out.push('');
+    out.push(mk(`${l.qty} x ${l.name}`.slice(0, cols), 'plain'));
+    for (const c of l.changes) out.push(mk(`   >> ${c}`.slice(0, cols), 'plain'));
+    if (l.note) out.push(mk(`   >> "${l.note}"`.slice(0, cols), 'plain'));
+    out.push(mk('', 'plain'));
   }
 
   if (t.kitchenShowPrices) {
-    out.push('-'.repeat(cols));
-    out.push(row('TOTAL', money(d.total), cols));
+    out.push(mk('-'.repeat(cols), 'rule'));
+    out.push(mk(row('TOTAL', money(d.total), cols), 'row'));
   }
 
   return out;

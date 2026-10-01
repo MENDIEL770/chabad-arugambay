@@ -77,3 +77,93 @@ export async function saveReceiptTemplate(formData: FormData): Promise<ActionRes
     return { ok: true, message: 'התבנית נשמרה.' };
   });
 }
+
+const SLOTS = {
+  logo: 'logo_path',
+  header: 'header_image_path',
+  footer: 'footer_image_path',
+} as const;
+
+export type ReceiptImageSlot = keyof typeof SLOTS;
+
+/** 576px is the full width of 80mm thermal paper; larger is wasted bytes. */
+export const RECEIPT_IMAGE_SPEC = {
+  maxBytes: 2 * 1024 * 1024,
+  recommendedWidth: 576,
+  formats: ['image/png', 'image/jpeg', 'image/webp'],
+  formatLabel: 'PNG · JPEG · WebP',
+} as const;
+
+export async function uploadReceiptImage(formData: FormData): Promise<ActionResult> {
+  return guarded('staff', async () => {
+    const slot = String(formData.get('slot') ?? '') as ReceiptImageSlot;
+    if (!(slot in SLOTS)) return { ok: false, message: 'שדה לא מוכר.' };
+
+    const file = formData.get('image');
+    if (!(file instanceof File) || file.size === 0) {
+      return { ok: false, message: 'לא נבחרה תמונה.' };
+    }
+    if (file.size > RECEIPT_IMAGE_SPEC.maxBytes) {
+      return { ok: false, message: 'התמונה גדולה מ-2MB.' };
+    }
+    if (!(RECEIPT_IMAGE_SPEC.formats as readonly string[]).includes(file.type)) {
+      return { ok: false, message: `פורמט לא נתמך. ${RECEIPT_IMAGE_SPEC.formatLabel}.` };
+    }
+
+    const sb = createServiceClient();
+    const ext = file.type.split('/')[1].replace('jpeg', 'jpg');
+    const key = `${TENANT_ID}/${slot}-${Date.now()}.${ext}`;
+
+    const { error: upErr } = await sb.storage
+      .from('receipt')
+      .upload(key, file, { contentType: file.type, upsert: false });
+    if (upErr) return { ok: false, message: `ההעלאה נכשלה: ${upErr.message}` };
+
+    // Read the old key first so it can be removed only after the row points
+    // at the new one — a failure in between must not leave a blank receipt.
+    const { data: prev } = await sb
+      .from('receipt_template')
+      .select(SLOTS[slot])
+      .eq('tenant_id', TENANT_ID)
+      .maybeSingle();
+
+    const { error: rowErr } = await sb
+      .from('receipt_template')
+      .upsert({ tenant_id: TENANT_ID, [SLOTS[slot]]: key }, { onConflict: 'tenant_id' });
+
+    if (rowErr) {
+      await sb.storage.from('receipt').remove([key]);
+      return { ok: false, message: `השמירה נכשלה: ${rowErr.message}` };
+    }
+
+    const old = (prev as Record<string, string> | null)?.[SLOTS[slot]];
+    if (old && old !== key) await sb.storage.from('receipt').remove([old]);
+
+    revalidatePath('/admin/restaurant/receipt');
+    return { ok: true, message: 'התמונה הועלתה.' };
+  });
+}
+
+export async function removeReceiptImage(slot: ReceiptImageSlot): Promise<ActionResult> {
+  return guarded('staff', async () => {
+    if (!(slot in SLOTS)) return { ok: false, message: 'שדה לא מוכר.' };
+
+    const sb = createServiceClient();
+    const { data: row } = await sb
+      .from('receipt_template')
+      .select(SLOTS[slot])
+      .eq('tenant_id', TENANT_ID)
+      .maybeSingle();
+
+    const { error } = await sb
+      .from('receipt_template')
+      .upsert({ tenant_id: TENANT_ID, [SLOTS[slot]]: null }, { onConflict: 'tenant_id' });
+    if (error) return { ok: false, message: error.message };
+
+    const path = (row as Record<string, string> | null)?.[SLOTS[slot]];
+    if (path) await sb.storage.from('receipt').remove([path]);
+
+    revalidatePath('/admin/restaurant/receipt');
+    return { ok: true, message: 'התמונה הוסרה.' };
+  });
+}
