@@ -7,6 +7,7 @@ import { hasSupabase, TENANT_ID } from '@/lib/config';
 import { NotAuthorized, requireRole } from '@/lib/auth';
 import type { AppRole } from '@/lib/roles';
 import { NEXT_STATUS } from '@/lib/order-flow';
+import { notifyOrderStatus } from '@/lib/whatsapp';
 
 export interface ActionResult {
   ok: boolean;
@@ -55,7 +56,7 @@ export async function advanceOrder(
     const sb = db();
     const { data: order } = await sb
       .from('orders')
-      .select('status, code, timeline')
+      .select('status, code, timeline, customer_name, customer_phone, total_lkr, fulfillment, pay_method, track_token')
       .eq('id', orderId)
       .eq('tenant_id', TENANT_ID)
       .maybeSingle();
@@ -95,6 +96,22 @@ export async function advanceOrder(
       type: `status:${next.data}`,
       payload: entry,
       actor: 'admin',
+    });
+
+    // Fire-and-forget by design: the status change is already committed and
+    // a messaging outage must not undo it or block the board.
+    await notifyOrderStatus(orderId, next.data, {
+      code: order.code as string,
+      customerName: order.customer_name as string,
+      phone: order.customer_phone as string,
+      totalLkr: (order.total_lkr as number) ?? 0,
+      fulfillment: order.fulfillment as 'delivery' | 'pickup' | 'dine_in',
+      etaMinutes: opts?.etaMinutes ?? null,
+      payToDriver: order.pay_method === 'cash_lkr_to_driver',
+      rejectReason: opts?.reason ?? null,
+      trackUrl: order.track_token
+        ? `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://chabad-arugambay.vercel.app'}/order/${order.track_token}`
+        : null,
     });
 
     revalidatePath('/admin/orders');
