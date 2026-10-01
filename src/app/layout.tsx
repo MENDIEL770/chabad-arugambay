@@ -54,6 +54,11 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     >
       <body className="min-h-full flex flex-col bg-bg text-fg">
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
+        <noscript>
+          {/* The reveal animation needs an observer. Without scripting the
+              content must simply be visible. */}
+          <style>{'[data-reveal]{opacity:1!important;transform:none!important}'}</style>
+        </noscript>
         {children}
       </body>
     </html>

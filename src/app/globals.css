@@ -209,3 +209,29 @@ body {
 :where(a, button, input, select, textarea, summary):focus-visible {
   outline: 3px solid var(--accent-strong); outline-offset: 2px; border-radius: 4px;
 }
+
+/* ---------------------------------------------------------------------------
+   Scroll reveal. The hidden state lives here rather than in the component so
+   React never has to set it, and so the two escape hatches below can win
+   without any JavaScript running at all.
+--------------------------------------------------------------------------- */
+[data-reveal] {
+  transition: opacity .7s ease-out, transform .7s ease-out;
+}
+[data-reveal="out"] {
+  opacity: 0;
+  transform: translateY(20px);
+}
+[data-reveal="in"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Someone who asked for less motion gets the content, not the animation. */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

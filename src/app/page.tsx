@@ -12,6 +12,10 @@ import { HeroSky } from '@/components/site/hero-sky';
 import { HeroCarousel } from '@/components/site/hero-carousel';
 import { ServiceCards } from '@/components/site/service-cards';
 import { DishThumb } from '@/components/menu/dish-thumb';
+import { AboutSection } from '@/components/site/about-section';
+import { ContactSection } from '@/components/site/contact-section';
+import { GalleryStrip } from '@/components/site/gallery-strip';
+import { getAbout, getGallery } from '@/lib/data/gallery';
 import { Icon } from '@/components/ui/icon';
 
 export const revalidate = 3600;
@@ -103,7 +107,13 @@ function HeroCopy({
 
 export default async function HomePage() {
   const cal = getHomeCalendar();
-  const [menu, slides, copy] = await Promise.all([getMenu(), getHeroSlides(), getSiteText()]);
+  const [menu, slides, copy, about, featured] = await Promise.all([
+    getMenu(),
+    getHeroSlides(),
+    getSiteText(),
+    getAbout(),
+    getGallery({ featuredOnly: true, limit: 10 }),
+  ]);
   const highlights = menu.flatMap((c) => c.items).slice(0, 4);
 
   return (
@@ -199,6 +209,11 @@ export default async function HomePage() {
             </ul>
           </div>
         </section>
+        {featured.length > 0 && <GalleryStrip items={featured} />}
+
+        <AboutSection about={about} />
+
+        <ContactSection statusLabel={cal.status.label} />
       </main>
 
       <SiteFooter />

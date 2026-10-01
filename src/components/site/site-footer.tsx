@@ -27,7 +27,8 @@ const COLUMNS = [
       { href: '/travel', label: 'המלצות לינה' },
       { href: '/travel', label: 'מה לעשות' },
       { href: '/articles', label: 'מאמרים' },
-      { href: '/ask', label: 'צור קשר' },
+      { href: '/gallery', label: 'גלריה' },
+      { href: '/about', label: 'אודות' },
     ],
   },
 ];

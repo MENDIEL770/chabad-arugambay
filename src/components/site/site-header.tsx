@@ -9,6 +9,8 @@ const NAV = [
   { href: '/whats-on', label: 'מה קורה' },
   { href: '/menu', label: 'המסעדה' },
   { href: '/travel', label: 'טיולים והמלצות' },
+  { href: '/gallery', label: 'גלריה' },
+  { href: '/about', label: 'אודות' },
   { href: '/articles', label: 'מאמרים' },
   { href: '/ask', label: 'שאלו אותנו' },
 ];
