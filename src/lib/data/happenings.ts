@@ -24,6 +24,7 @@ export interface Happening {
   anchorOffsetMin: number;
   pausedNote: I18n;
   sort: number;
+  isActive: boolean;
 }
 
 export const KIND_LABEL: Record<HappeningKind, string> = {
@@ -91,15 +92,23 @@ export function nextOccurrence(h: Happening, from: DateTime): DateTime | null {
   return null;
 }
 
-export async function getHappenings(): Promise<Happening[]> {
+export async function getHappenings(
+  opts: { includeHidden?: boolean } = {},
+): Promise<Happening[]> {
   if (!hasSupabase()) return [];
 
-  const { data, error } = await createServiceClient()
+  // The public board shows active entries only; the admin needs to see the
+  // paused ones too, or a class switched off for the season becomes
+  // invisible and gets created a second time.
+  let q = createServiceClient()
     .from('happenings')
     .select('*')
     .eq('tenant_id', TENANT_ID)
-    .eq('is_active', true)
     .order('sort');
+
+  if (!opts.includeHidden) q = q.eq('is_active', true);
+
+  const { data, error } = await q;
 
   if (error) {
     if (/schema cache|does not exist/i.test(error.message)) {
@@ -126,6 +135,7 @@ export async function getHappenings(): Promise<Happening[]> {
     anchorOffsetMin: (r.anchor_offset_min as number) ?? 0,
     pausedNote: (r.paused_note ?? {}) as I18n,
     sort: (r.sort as number) ?? 0,
+    isActive: r.is_active !== false,
   }));
 }
 

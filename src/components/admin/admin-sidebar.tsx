@@ -42,6 +42,8 @@ export const SECTIONS: { title: string; entries: Entry[] }[] = [
     entries: [
       { href: '/admin/settings/hero', label: 'תמונות רקע', icon: 'image' },
       { href: '/admin/settings/text', label: 'טקסטים', icon: 'sparkle', hint: 'כל משפט באתר' },
+      { href: '/admin/content/happenings', label: 'פעילויות וזמנים', icon: 'calendar', hint: 'שיעורים ומניינים' },
+      { href: '/admin/content/gallery', label: 'גלריה', icon: 'camera', hint: 'תמונות וסרטונים' },
       { href: '/admin/content/travel', label: 'טיולים והמלצות', icon: 'map', hint: 'לינה ופעילויות' },
       { href: '/admin/content/messages', label: 'הודעות ללקוחות', icon: 'message', hint: 'וואטסאפ אוטומטי' },
     ],

@@ -58,7 +58,7 @@ export async function getStays(includeInactive = false): Promise<Stay[]> {
 
   const url = (p: unknown) =>
     typeof p === 'string' && p
-      ? sb.storage.from('gallery').getPublicUrl(p).data.publicUrl
+      ? sb.storage.from('content').getPublicUrl(p).data.publicUrl
       : null;
 
   return data.map((r: Row) => ({

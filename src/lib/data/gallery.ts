@@ -76,7 +76,7 @@ export async function getGallery(
     throw new Error(`Could not load gallery: ${error.message}`);
   }
 
-  const publicUrl = (p: string) => sb.storage.from('gallery').getPublicUrl(p).data.publicUrl;
+  const publicUrl = (p: string) => sb.storage.from('content').getPublicUrl(p).data.publicUrl;
 
   return (data ?? []).map((r: Row) => {
     const kind = r.kind as MediaItem['kind'];
@@ -150,7 +150,7 @@ export async function getAbout(): Promise<AboutContent> {
   if (error || !data) return ABOUT_FALLBACK;
 
   const publicUrl = (p: string | null) =>
-    p ? sb.storage.from('gallery').getPublicUrl(p).data.publicUrl : null;
+    p ? sb.storage.from('content').getPublicUrl(p).data.publicUrl : null;
 
   const pick = (v: unknown, fallback: I18n): I18n => {
     const t = v as I18n | null;
