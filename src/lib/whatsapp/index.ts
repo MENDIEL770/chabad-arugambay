@@ -2,13 +2,11 @@ import 'server-only';
 import { createServiceClient } from '@/lib/supabase/server';
 import { formatLkr, hasSupabase, TENANT_ID } from '@/lib/config';
 import { greenApi } from './green-api';
-import { NullProvider, type WhatsAppProvider } from './provider';
-import { type OrderMessageContext } from './messages';
+import { NullProvider, type OrderMessageContext, type WhatsAppProvider } from './provider';
 import { eventForOrderStatus } from './catalogue';
 import { renderFor } from './templates';
 
-export { messageForStatus } from './messages';
-export type { OrderMessageContext } from './messages';
+export type { OrderMessageContext } from './provider';
 export { getTemplates, renderFor } from './templates';
 
 const HOUSE_NAME = 'בית חב״ד ארוגם ביי';

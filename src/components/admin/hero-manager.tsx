@@ -5,9 +5,12 @@ import { useRef, useState, useTransition } from 'react';
 import { Icon } from '@/components/ui/icon';
 import { HERO_IMAGE_SPEC, HERO_INTERVAL_SECONDS, type HeroSlide } from '@/lib/data/hero-spec';
 import {
-  deleteHeroSlide, moveHeroSlide, saveHeroSlide, toggleHeroSlide, uploadHeroSlide,
+  commitHeroSlide, deleteHeroSlide, moveHeroSlide, saveHeroSlide, toggleHeroSlide,
   type ActionResult,
 } from '@/app/admin/settings/hero/actions';
+import { createUploadTicket, type Ticket } from '@/app/admin/upload-actions';
+import { measureImage, uploadToTicket } from '@/lib/upload';
+import { runAction } from '@/lib/run-action';
 
 const KB = (b: number | null) => (b ? `${Math.round(b / 1024)} KB` : '—');
 
@@ -42,7 +45,32 @@ function Uploader({ onResult }: { onResult: (r: ActionResult) => void }) {
     <form
       ref={formRef}
       className="card"
-      action={(fd) => start(async () => onResult(await uploadHeroSlide(fd)))}
+      action={(fd) => start(async () => {
+        const chosen = inputRef.current?.files?.[0];
+        if (!chosen) { onResult({ ok: false, message: 'לא נבחרה תמונה.' }); return; }
+
+        // Ask, upload, record. The bytes never pass through a server
+        // action: Next caps that body at 1MB and Vercel at 4.5MB, and a
+        // hero image is routinely larger than both.
+        const ticket = await runAction(() =>
+          createUploadTicket('hero', chosen.type, chosen.size));
+        if (!ticket.ok) { onResult(ticket as ActionResult); return; }
+
+        const up = await uploadToTicket(ticket as Ticket, chosen);
+        if (!up.ok) { onResult(up); return; }
+
+        const dims = await measureImage(chosen);
+        fd.set('path', up.path);
+        fd.set('bytes', String(chosen.size));
+        if (dims) {
+          fd.set('width', String(dims.width));
+          fd.set('height', String(dims.height));
+        }
+
+        const r = await runAction(() => commitHeroSlide(fd)) as ActionResult;
+        onResult(r);
+        if (r.ok) formRef.current?.reset();
+      })}
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>

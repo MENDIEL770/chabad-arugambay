@@ -42,3 +42,23 @@ export function toWaNumber(phone: string): string | null {
   if (digits.length < 8 || digits.length > 15) return null;
   return digits;
 }
+
+/**
+ * What a message about one order needs to know.
+ *
+ * Lives here rather than beside the wording, because the wording is no
+ * longer in the code: it is a template the house edits, and this is the
+ * shape the renderer fills in.
+ */
+export interface OrderMessageContext {
+  code: string;
+  customerName: string;
+  totalLkr: number;
+  fulfillment: 'delivery' | 'pickup' | 'dine_in';
+  etaMinutes?: number | null;
+  trackUrl?: string | null;
+  payToDriver?: boolean;
+  driverName?: string | null;
+  driverPhone?: string | null;
+  rejectReason?: string | null;
+}

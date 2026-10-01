@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 
 /**
  * An upload must not promise more than the transport can carry.
@@ -24,10 +25,18 @@ function bodySizeLimitBytes(): number | null {
 }
 
 describe('upload limits', () => {
-  const specs = readdirSync('src/lib/spec')
-    .filter((f) => f.endsWith('.ts'))
+  // Every file that declares a maxBytes, wherever it lives. Scanning only
+  // src/lib/spec missed HERO_IMAGE_SPEC — it sits in src/lib/data because
+  // the hero types are shared with a client component — so the hero upload
+  // stayed broken above 4.5MB while this test reported everything fine. A
+  // guard with a blind spot is worse than none: it manufactures confidence.
+  const specFiles = execSync(
+    `grep -rl "maxBytes:" src --include=*.ts | grep -v __tests__ || true`,
+  ).toString().trim().split('\n').filter(Boolean);
+
+  const specs = specFiles
     .map((f) => {
-      const src = readFileSync(`src/lib/spec/${f}`, 'utf8');
+      const src = readFileSync(f, 'utf8');
       // "8 * 1024 * 1024" — multiply the factors rather than eval them.
       const m = src.match(/maxBytes:\s*([\d*\s]+),/);
       const bytes = m
@@ -69,8 +78,8 @@ describe('upload limits', () => {
     const kinds = readFileSync('src/lib/spec/uploads.ts', 'utf8');
 
     for (const s of specs.filter((x) => x.maxBytes > VERCEL_BODY_LIMIT)) {
-      // gallery-image.ts -> the 'gallery' kind, dish-image.ts -> 'dish'.
-      const name = s.file.replace('-image.ts', '');
+      // src/lib/spec/gallery-image.ts -> the 'gallery' kind.
+      const name = s.file.split('/').pop()!.replace('-image.ts', '').replace('-spec.ts', '');
       expect(
         kinds.includes(`${name}: {`),
         `${s.file} allows ${Math.round(s.maxBytes / 1024 / 1024)}MB, above Vercel's ` +

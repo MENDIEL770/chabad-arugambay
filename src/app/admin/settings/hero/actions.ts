@@ -5,8 +5,8 @@ import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
 import { hasSupabase, TENANT_ID } from '@/lib/config';
 import { NotAuthorized, requireRole } from '@/lib/auth';
+import { objectExists } from '@/app/admin/upload-actions';
 import type { AppRole } from '@/lib/roles';
-import { HERO_IMAGE_SPEC } from '@/lib/data/hero-spec';
 
 export interface ActionResult {
   ok: boolean;
@@ -42,38 +42,27 @@ function i18nOrNull(he: string, en: string) {
   return { he: h, en: e || h };
 }
 
-export async function uploadHeroSlide(formData: FormData): Promise<ActionResult> {
+/**
+ * Record a hero image that has already landed in Storage.
+ *
+ * The bytes come straight from the browser with a one-shot token. A note
+ * here used to blame measuring dimensions for a production React #441 and
+ * removed that measurement; the diagnosis was wrong. The real cause was the
+ * 1MB server-action body limit — a 5MB hero image never reached this
+ * function at all. Dimensions are measured in the browser again, because
+ * they were never the problem.
+ */
+export async function commitHeroSlide(formData: FormData): Promise<ActionResult> {
   return guarded('admin', async () => {
-    const file = formData.get('image');
-    if (!(file instanceof File) || file.size === 0) {
-      return { ok: false, message: 'לא נבחרה תמונה.' };
+    const path = String(formData.get('path') ?? '');
+    if (!path.startsWith(`${TENANT_ID}/`)) {
+      return { ok: false, message: 'נתיב לא תקין.' };
     }
-    if (file.size > HERO_IMAGE_SPEC.maxBytes) {
-      const mb = (HERO_IMAGE_SPEC.maxBytes / 1024 / 1024).toFixed(0);
-      return { ok: false, message: `התמונה גדולה מ-${mb}MB. כדאי לדחוס אותה.` };
+    if (!(await objectExists('hero', path))) {
+      return { ok: false, message: 'הקובץ לא נמצא באחסון. נסו להעלות שוב.' };
     }
-    if (!(HERO_IMAGE_SPEC.formats as readonly string[]).includes(file.type)) {
-      return { ok: false, message: `פורמט לא נתמך. ${HERO_IMAGE_SPEC.formatLabel}.` };
-    }
-
-    /**
-     * Dimensions used to be measured in the browser and posted along. That
-     * needed a promise created outside an event handler, and the admin page
-     * was failing in production with React #441 — which is exactly what
-     * that produces. The width guidance is now advisory text next to the
-     * field instead; an undersized hero looks soft, it does not break.
-     */
-    const width = Number(formData.get('width')) || null;
-    const height = Number(formData.get('height')) || null;
 
     const sb = db();
-    const ext = file.type.split('/')[1].replace('jpeg', 'jpg');
-    const key = `${TENANT_ID}/${Date.now()}.${ext}`;
-
-    const { error: upErr } = await sb.storage
-      .from('hero')
-      .upload(key, file, { contentType: file.type, upsert: false });
-    if (upErr) return { ok: false, message: `ההעלאה נכשלה: ${upErr.message}` };
 
     // New slides go last so an upload never silently reorders the rotation.
     const { data: last } = await sb
@@ -86,15 +75,15 @@ export async function uploadHeroSlide(formData: FormData): Promise<ActionResult>
 
     const { error: rowErr } = await sb.from('hero_slides').insert({
       tenant_id: TENANT_ID,
-      image_path: key,
+      image_path: path,
       sort: ((last?.sort as number) ?? 0) + 1,
-      width_px: width,
-      height_px: height,
-      bytes: file.size,
+      width_px: Number(formData.get('width')) || null,
+      height_px: Number(formData.get('height')) || null,
+      bytes: Number(formData.get('bytes')) || null,
     });
 
     if (rowErr) {
-      await sb.storage.from('hero').remove([key]);
+      await sb.storage.from('hero').remove([path]);
       return { ok: false, message: `שמירת השורה נכשלה: ${rowErr.message}` };
     }
 

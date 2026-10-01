@@ -48,6 +48,7 @@ const StaySchema = z.object({
   bookingUrl: z.string().trim().max(2000).default(''),
   isAffiliate: z.string().optional(),
   icon: z.string().trim().default('bed'),
+  imagePath: z.string().trim().max(400).optional(),
 });
 
 export async function saveStay(formData: FormData): Promise<ActionResult> {
@@ -85,6 +86,11 @@ export async function saveStay(formData: FormData): Promise<ActionResult> {
       booking_url: url || null,
       is_affiliate: v.isAffiliate === 'on',
       icon: v.icon,
+      // Absent means leave the picture alone; an empty string means remove
+      // it. Collapsing those would wipe the photo on every unrelated edit.
+      ...(formData.has('imagePath')
+        ? { image_path: String(formData.get('imagePath')) || null }
+        : {}),
     };
 
     const sb = createServiceClient();
@@ -133,6 +139,7 @@ const TipSchema = z.object({
   bodyEn: z.string().trim().max(1000).default(''),
   tags: z.string().trim().max(200).default(''),
   icon: z.string().trim().default('map'),
+  imagePath: z.string().trim().max(400).optional(),
 });
 
 export async function saveTip(formData: FormData): Promise<ActionResult> {
@@ -151,6 +158,9 @@ export async function saveTip(formData: FormData): Promise<ActionResult> {
       // than this earns.
       tags: v.tags.split(',').map((t) => t.trim()).filter(Boolean).slice(0, 8),
       icon: v.icon,
+      ...(formData.has('imagePath')
+        ? { image_path: String(formData.get('imagePath')) || null }
+        : {}),
     };
 
     const sb = createServiceClient();
@@ -170,6 +180,17 @@ export async function saveTip(formData: FormData): Promise<ActionResult> {
       .insert({ ...row, sort: ((last?.sort as number) ?? 0) + 1 });
     if (error) return fail(error);
     return done('ההמלצה נוספה.');
+  });
+}
+
+export async function toggleTip(id: string, active: boolean): Promise<ActionResult> {
+  return guarded('staff', async () => {
+    const { error } = await createServiceClient()
+      .from('tips').update({ is_active: active }).eq('id', id).eq('tenant_id', TENANT_ID);
+    if (error) return fail(error);
+    // Hiding beats deleting for anything seasonal: the surf school closes
+    // for the monsoon and the write-up is wanted again in April.
+    return done(active ? 'מוצגת באתר.' : 'הוסתרה.');
   });
 }
 

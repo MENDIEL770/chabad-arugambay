@@ -25,11 +25,22 @@ export interface Tip {
   body: I18n;
   tags: string[];
   icon: IconName;
+  imageUrl: string | null;
   sort: number;
   isActive: boolean;
 }
 
 type Row = Record<string, unknown>;
+
+/** A storage path becomes a public URL; anything else becomes null. */
+function publicUrl(
+  sb: ReturnType<typeof createServiceClient>,
+  p: unknown,
+): string | null {
+  return typeof p === 'string' && p
+    ? sb.storage.from('content').getPublicUrl(p).data.publicUrl
+    : null;
+}
 
 function missing(msg: string) {
   return /schema cache|does not exist/i.test(msg);
@@ -56,11 +67,6 @@ export async function getStays(includeInactive = false): Promise<Stay[]> {
   }
   if (!data?.length) return includeInactive ? [] : seedStays();
 
-  const url = (p: unknown) =>
-    typeof p === 'string' && p
-      ? sb.storage.from('content').getPublicUrl(p).data.publicUrl
-      : null;
-
   return data.map((r: Row) => ({
     id: r.id as string,
     name: r.name as string,
@@ -70,7 +76,7 @@ export async function getStays(includeInactive = false): Promise<Stay[]> {
     walkMinutes: (r.walk_minutes as number | null) ?? null,
     bookingUrl: (r.booking_url as string | null) ?? null,
     isAffiliate: r.is_affiliate === true,
-    imageUrl: url(r.image_path),
+    imageUrl: publicUrl(sb, r.image_path),
     icon: (r.icon as IconName) ?? 'bed',
     sort: (r.sort as number) ?? 0,
     isActive: r.is_active !== false,
@@ -97,6 +103,7 @@ export async function getTips(includeInactive = false): Promise<Tip[]> {
     body: (r.body ?? { he: '', en: '' }) as I18n,
     tags: (r.tags ?? []) as string[],
     icon: (r.icon as IconName) ?? 'map',
+    imageUrl: publicUrl(sb, r.image_path),
     sort: (r.sort as number) ?? 0,
     isActive: r.is_active !== false,
   }));
@@ -127,6 +134,7 @@ function seedTips(): Tip[] {
     body: t.body,
     tags: [...t.tags],
     icon: t.icon,
+    imageUrl: null,
     sort: i,
     isActive: true,
   }));

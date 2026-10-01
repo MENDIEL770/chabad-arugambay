@@ -5,6 +5,8 @@ import { Icon } from '@/components/ui/icon';
 import {
   STAYS, TIPS, TIER_LABEL, type TravelTier,
 } from '@/lib/data/content';
+import { RichText } from '@/components/ui/rich-text';
+import { richTextToPlain } from '@/lib/rich-text';
 
 const TIERS: TravelTier[] = ['luxury', 'standard', 'backpacker', 'family'];
 
@@ -27,7 +29,7 @@ export function TravelSearch() {
       STAYS.filter((s) => {
         if (tier && !s.tiers.includes(tier)) return false;
         if (!needle) return true;
-        return normalise(`${s.name} ${s.blurb.he} ${s.blurb.en}`).includes(needle);
+        return normalise(`${s.name} ${richTextToPlain(s.blurb.he)} ${s.blurb.en}`).includes(needle);
       }),
     [needle, tier],
   );
@@ -35,7 +37,7 @@ export function TravelSearch() {
   const tips = useMemo(
     () =>
       TIPS.filter((t) =>
-        !needle ? true : normalise(`${t.title.he} ${t.body.he} ${t.tags.join(' ')}`).includes(needle),
+        !needle ? true : normalise(`${t.title.he} ${richTextToPlain(t.body.he)} ${t.tags.join(' ')}`).includes(needle),
       ),
     [needle],
   );
@@ -93,7 +95,7 @@ export function TravelSearch() {
                 </span>
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                   <b className="ltr text-[1rem] font-bold">{s.name}</b>
-                  <p className="text-[.85rem] text-fg-muted">{s.blurb.he}</p>
+                  <RichText source={s.blurb.he} className="text-[.85rem] text-fg-muted" />
                   <div className="mt-0.5 flex flex-wrap items-center gap-2">
                     {s.tiers.map((t) => (
                       <span key={t} className="chip">{TIER_LABEL[t]}</span>
@@ -129,7 +131,7 @@ export function TravelSearch() {
                 </span>
                 <div className="flex min-w-0 flex-col gap-1">
                   <b className="font-medium">{t.title.he}</b>
-                  <p className="text-[.85rem] text-fg-muted">{t.body.he}</p>
+                  <RichText source={t.body.he} className="text-[.85rem] text-fg-muted" />
                   <div className="mt-1 flex flex-wrap gap-1.5">
                     {t.tags.map((tag) => <span key={tag} className="chip">{tag}</span>)}
                   </div>

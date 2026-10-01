@@ -6,9 +6,12 @@ import { TIER_LABEL, type TravelTier } from '@/lib/data/content';
 import type { Stay, Tip } from '@/lib/data/travel';
 import { runAction } from '@/lib/run-action';
 import {
-  deleteStay, deleteTip, importSeedTravel, saveStay, saveTip, toggleStay,
+  deleteStay, deleteTip, importSeedTravel, saveStay, saveTip, toggleStay, toggleTip,
   type ActionResult,
 } from '@/app/admin/content/travel/actions';
+import { ImageField } from '@/components/admin/image-field';
+import { RichTextField } from '@/components/admin/rich-text-field';
+import { richTextToPlain } from '@/lib/rich-text';
 
 const TIERS: TravelTier[] = ['luxury', 'standard', 'backpacker', 'family'];
 const ICONS: IconName[] = ['bed', 'palm', 'surf', 'hut', 'map', 'waves', 'binoculars', 'tuktuk', 'mountain', 'bus', 'leaf'];
@@ -48,11 +51,16 @@ function StayForm({
         <input className="field ltr" name="name" defaultValue={stay?.name} required />
       </label>
 
-      <label>
-        <span className="label !mb-1">תיאור (עברית)</span>
-        <input className="field" name="blurbHe" defaultValue={stay?.blurb.he} />
-      </label>
-      <label>
+      <div className="col-span-2 max-[700px]:col-span-1">
+        <RichTextField
+          name="blurbHe"
+          label="תיאור (עברית)"
+          defaultValue={stay?.blurb.he ?? ''}
+          rows={3}
+          hint="אפשר להדגיש ולהוסיף קישור"
+        />
+      </div>
+      <label className="col-span-2 max-[700px]:col-span-1">
         <span className="label !mb-1">תיאור (English)</span>
         <input className="field ltr" name="blurbEn" defaultValue={stay?.blurb.en} />
       </label>
@@ -119,9 +127,81 @@ function StayForm({
         </select>
       </label>
 
+      <div className="col-span-2 max-[700px]:col-span-1">
+        <ImageField
+          kind="stay"
+          label="תמונה"
+          currentUrl={stay?.imageUrl}
+          onError={(message) => onDone({ ok: false, message })}
+        />
+      </div>
+
       <div className="col-span-2 flex gap-2 max-[700px]:col-span-1">
         <button type="submit" className="btn btn-accent btn-sm" disabled={pending}>
           {pending ? 'שומר…' : stay ? 'שמירה' : 'הוספה'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/**
+ * One form for adding and for editing, so the two cannot drift apart —
+ * which is how the edit path came to be missing here in the first place.
+ */
+function TipForm({ tip, onDone }: { tip?: Tip; onDone: (r: ActionResult) => void }) {
+  const [pending, start] = useTransition();
+
+  return (
+    <form
+      className="grid grid-cols-2 gap-3 rounded-input border border-line bg-surface p-4 max-[700px]:grid-cols-1"
+      action={(fd) => start(async () => onDone(await runAction(() => saveTip(fd)) as ActionResult))}
+    >
+      {tip && <input type="hidden" name="id" value={tip.id} />}
+
+      <label>
+        <span className="label !mb-1">כותרת (עברית)</span>
+        <input className="field" name="titleHe" required defaultValue={tip?.title.he} />
+      </label>
+      <label>
+        <span className="label !mb-1">כותרת (English)</span>
+        <input className="field ltr" name="titleEn" defaultValue={tip?.title.en} />
+      </label>
+
+      <div className="col-span-2 max-[700px]:col-span-1">
+        <RichTextField
+          name="bodyHe"
+          label="תוכן (עברית)"
+          defaultValue={tip?.body.he ?? ''}
+          rows={4}
+          hint="אפשר להדגיש ולהוסיף קישור"
+        />
+      </div>
+
+      <label>
+        <span className="label !mb-1">תגיות (מופרדות בפסיק)</span>
+        <input className="field" name="tags" placeholder="גלישה, מתחילים"
+               defaultValue={tip?.tags.join(', ')} />
+      </label>
+      <label>
+        <span className="label !mb-1">אייקון</span>
+        <select className="field" name="icon" defaultValue={tip?.icon ?? 'map'}>
+          {ICONS.map((i) => <option key={i} value={i}>{i}</option>)}
+        </select>
+      </label>
+
+      <div className="col-span-2 max-[700px]:col-span-1">
+        <ImageField
+          kind="stay"
+          label="תמונה"
+          currentUrl={tip?.imageUrl}
+          onError={(message) => onDone({ ok: false, message })}
+        />
+      </div>
+
+      <div className="col-span-2 max-[700px]:col-span-1">
+        <button type="submit" className="btn btn-accent btn-sm" disabled={pending}>
+          {pending ? 'שומר…' : tip ? 'שמירה' : 'הוספה'}
         </button>
       </div>
     </form>
@@ -133,6 +213,7 @@ export function TravelManager({ stays, tips }: { stays: Stay[]; tips: Tip[] }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [addingTip, setAddingTip] = useState(false);
+  const [editingTip, setEditingTip] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   const empty = stays.length === 0 && tips.length === 0;
@@ -241,67 +322,76 @@ export function TravelManager({ stays, tips }: { stays: Stay[]; tips: Tip[] }) {
         </div>
 
         {addingTip && (
-          <form
-            className="mb-4 grid grid-cols-2 gap-3 rounded-input border border-line bg-surface p-4 max-[700px]:grid-cols-1"
-            action={(fd) => start(async () => {
-              const r = await runAction(() => saveTip(fd)) as ActionResult;
-              setResult(r);
-              if (r.ok) setAddingTip(false);
-            })}
-          >
-            <label>
-              <span className="label !mb-1">כותרת (עברית)</span>
-              <input className="field" name="titleHe" required />
-            </label>
-            <label>
-              <span className="label !mb-1">כותרת (English)</span>
-              <input className="field ltr" name="titleEn" />
-            </label>
-            <label className="col-span-2 max-[700px]:col-span-1">
-              <span className="label !mb-1">תוכן (עברית)</span>
-              <textarea className="field" name="bodyHe" rows={3} />
-            </label>
-            <label>
-              <span className="label !mb-1">תגיות (מופרדות בפסיק)</span>
-              <input className="field" name="tags" placeholder="גלישה, מתחילים" />
-            </label>
-            <label>
-              <span className="label !mb-1">אייקון</span>
-              <select className="field" name="icon" defaultValue="map">
-                {ICONS.map((i) => <option key={i} value={i}>{i}</option>)}
-              </select>
-            </label>
-            <div className="col-span-2 max-[700px]:col-span-1">
-              <button type="submit" className="btn btn-accent btn-sm" disabled={pending}>הוספה</button>
-            </div>
-          </form>
+          <div className="mb-4">
+            <TipForm onDone={(r) => { setResult(r); if (r.ok) setAddingTip(false); }} />
+          </div>
         )}
 
         <ul className="flex flex-col gap-2">
-          {tips.map((t) => (
-            <li key={t.id} className="card flex items-start gap-3 !p-4">
-              <span className="grid size-9 shrink-0 place-items-center rounded-input bg-accent-soft text-accent-strong">
-                <Icon name={t.icon} size={17} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <b className="block">{t.title.he}</b>
-                <span className="block text-[.82rem] text-fg-muted">{t.body.he}</span>
-                <div className="mt-1 flex flex-wrap gap-1.5">
-                  {t.tags.map((tag) => <span key={tag} className="chip">{tag}</span>)}
+          {tips.map((tp) => (
+            <li key={tp.id} className={`card !p-0 overflow-hidden ${tp.isActive ? '' : 'opacity-60'}`}>
+              <div className="flex flex-wrap items-start gap-3 p-4">
+                {tp.imageUrl ? (
+                  <div className="h-14 w-20 shrink-0 overflow-hidden rounded-input border border-line">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={tp.imageUrl} alt="" className="size-full object-cover" />
+                  </div>
+                ) : (
+                  <span className="grid size-9 shrink-0 place-items-center rounded-input bg-accent-soft text-accent-strong">
+                    <Icon name={tp.icon} size={17} />
+                  </span>
+                )}
+
+                <div className="min-w-[11rem] flex-1">
+                  <b className="block">{tp.title.he}</b>
+                  {/* The body is rich text now; the list wants the words
+                      only, not the asterisks around them. */}
+                  <span className="block text-[.82rem] text-fg-muted">
+                    {richTextToPlain(tp.body.he).slice(0, 140)}
+                  </span>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {tp.tags.map((tag) => <span key={tag} className="chip">{tag}</span>)}
+                    {!tp.isActive && <span className="chip chip-out">מוסתרת</span>}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${tp.isActive ? 'btn-ghost' : 'btn-accent'}`}
+                    disabled={pending}
+                    onClick={() => start(async () =>
+                      setResult(await runAction(() => toggleTip(tp.id, !tp.isActive)) as ActionResult))}
+                  >
+                    {tp.isActive ? 'הסתר' : 'הצג'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setEditingTip(editingTip === tp.id ? null : tp.id)}
+                  >
+                    {editingTip === tp.id ? 'סגור' : 'ערוך'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm text-danger"
+                    disabled={pending}
+                    onClick={() => {
+                      if (confirm(`למחוק את "${tp.title.he}"?`)) {
+                        start(async () => setResult(await runAction(() => deleteTip(tp.id)) as ActionResult));
+                      }
+                    }}
+                  >
+                    מחק
+                  </button>
                 </div>
               </div>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm text-danger"
-                disabled={pending}
-                onClick={() => {
-                  if (confirm(`למחוק את "${t.title.he}"?`)) {
-                    start(async () => setResult(await runAction(() => deleteTip(t.id)) as ActionResult));
-                  }
-                }}
-              >
-                מחק
-              </button>
+
+              {editingTip === tp.id && (
+                <div className="border-t border-line p-4">
+                  <TipForm tip={tp} onDone={(r) => { setResult(r); if (r.ok) setEditingTip(null); }} />
+                </div>
+              )}
             </li>
           ))}
         </ul>
