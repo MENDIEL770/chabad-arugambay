@@ -13,8 +13,17 @@ import { Reveal } from './reveal';
 export function ContactSection({ statusLabel }: { statusLabel: string }) {
   const { latitude, longitude } = TENANT.point;
   const digits = TENANT.whatsapp.replace(/[^\d]/g, '');
-  const maps = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-  const directions = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+  /**
+   * The house's own Google listing, by CID.
+   *
+   * A bare lat/lng drops an unnamed pin; the CID resolves to the business
+   * entry, so the map shows "בית חב״ד ארוגם ביי" with its hours and photos
+   * and Directions works from it. Taken from the listing's share link.
+   */
+  const cid = '2854414804382352519';
+  const maps = `https://maps.google.com/maps?cid=${cid}`;
+  const directions = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&destination_place_id=ChIJnUtEIgC95ToQh4TTKCTrnCc`;
+  const embed = `https://maps.google.com/maps?cid=${cid}&z=16&hl=iw&output=embed`;
 
   const rows = [
     { icon: 'map' as const, label: 'כתובת', value: 'Main Street, Arugam Bay, Sri Lanka', href: maps },
@@ -78,7 +87,7 @@ export function ContactSection({ statusLabel }: { statusLabel: string }) {
           <div className="overflow-hidden rounded-card border border-line bg-surface-sunk">
             <iframe
               title="מיקום בית חב״ד ארוגם ביי"
-              src={`https://maps.google.com/maps?q=${latitude},${longitude}&z=16&hl=iw&output=embed`}
+              src={embed}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               className="block h-[300px] w-full border-0"

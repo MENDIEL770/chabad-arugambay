@@ -6,7 +6,7 @@ insert into tenants (id, slug, name, timezone, country_code, is_israel,
                      latitude, longitude, elevation_m)
 values ('00000000-0000-0000-0000-000000000001', 'arugam-bay',
         '{"he":"בית חב״ד ארוגם ביי","en":"Chabad of Arugam Bay"}'::jsonb,
-        'Asia/Colombo', 'LK', false, 6.8404, 81.8353, 0)
+        'Asia/Colombo', 'LK', false, 6.8427703, 81.8311002, 0)
 on conflict (id) do update
   set name = excluded.name, latitude = excluded.latitude, longitude = excluded.longitude;
 

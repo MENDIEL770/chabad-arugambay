@@ -88,7 +88,12 @@ export interface GeoPoint {
 
 export const ARUGAM_BAY: GeoPoint = {
   name: 'Arugam Bay',
-  latitude: 6.8404,
-  longitude: 81.8353,
+  /**
+   * The house itself, from its Google Maps listing — not the middle of the
+   * bay. The previous figure was 533 m off, which is immaterial for zmanim
+   * (well under a second of sunset) but wrong for anything that navigates.
+   */
+  latitude: 6.8427703,
+  longitude: 81.8311002,
   timezone: 'Asia/Colombo',
 };
