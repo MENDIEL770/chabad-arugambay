@@ -1,133 +1,119 @@
--- Run both in the Supabase SQL Editor, then: npm run check:tables
+-- Run in the Supabase SQL Editor, then: npm run check:tables
+-- 0016 and 0017 you have already run; they are safe to run again only
+-- if you skipped them. If check:tables showed them green, run 0018 alone.
 
 -- ============================================================
--- 0016_travel.sql
+-- 0018_messages.sql
 -- ============================================================
 
--- 0016_travel.sql — places to stay and things to do, editable from the admin.
+-- 0018_messages.sql — outgoing message templates, and an image for a tip.
+--
+-- ASCII only. Hebrew in a .sql file on this project has been corrupted by a
+-- clipboard round-trip before; the wording is seeded from the app instead.
 
-create type stay_tier as enum ('luxury','standard','backpacker','family');
+-- ------------------------------------------------------------------ tips
 
-create table stays (
-  id         uuid primary key default gen_random_uuid(),
-  tenant_id  uuid not null references tenants(id) on delete cascade,
+alter table tips add column if not exists image_path text;
 
-  name       text not null,
-  blurb      jsonb not null default '{}'::jsonb,     -- {he, en}
-  tiers      stay_tier[] not null default '{}',
+-- ------------------------------------------------------- message templates
 
-  /** Indicative nightly rate, for sorting and for setting expectations. */
-  nightly_usd int,
-  walk_minutes int,
-
-  /**
-   * The affiliate destination.
-   *
-   * Stored whole rather than assembled from a hotel id and a partner id,
-   * because every network formats these differently and a half-built URL
-   * that silently earns nothing is worse than an obvious plain link.
-   */
-  booking_url text,
-  /** Shown to visitors so the arrangement is not hidden from them. */
-  is_affiliate boolean not null default false,
-
-  image_path text,
-  icon       text not null default 'bed',
-
-  sort       int not null default 0,
-  is_active  boolean not null default true,
-  created_at timestamptz not null default now(),
-
-  constraint affiliate_needs_url check (not is_affiliate or booking_url is not null)
+/**
+ * Which moment a message belongs to. The code looks these up by key, so a
+ * template can be rewritten freely but not invented: a new key needs a send
+ * site in the app to be any use.
+ */
+-- These names are the order statuses the app already uses, not a parallel
+-- vocabulary. A translation layer between "dispatched" and "on_the_way"
+-- would be one more place for the two to drift apart.
+create type message_event as enum (
+  'order_received',      -- the customer just placed an order
+  'order_accepted',      -- the kitchen took it
+  'order_ready',         -- ready for pickup / handed to the courier
+  'order_dispatched',    -- a courier has it
+  'order_delivered',
+  'order_rejected',
+  'registration_received',  -- signed up for a Shabbat meal
+  'registration_confirmed',
+  'registration_reminder',  -- the day before
+  'shabbat_times'           -- the weekly candle-lighting message
 );
 
-create index on stays (tenant_id, sort) where is_active;
+create type message_channel as enum ('whatsapp', 'email');
 
-create table tips (
+create table message_templates (
   id         uuid primary key default gen_random_uuid(),
   tenant_id  uuid not null references tenants(id) on delete cascade,
 
-  title      jsonb not null,
-  body       jsonb not null default '{}'::jsonb,
-  tags       text[] not null default '{}',
-  icon       text not null default 'map',
+  event      message_event   not null,
+  channel    message_channel not null default 'whatsapp',
 
-  sort       int not null default 0,
-  is_active  boolean not null default true,
+  /**
+   * Subject is email-only; WhatsApp has no such thing. Kept on the same row
+   * rather than in a separate table because every other column is shared
+   * and two tables would mean two editors.
+   */
+  subject    jsonb not null default '{}'::jsonb,   -- {he, en}
+  body       jsonb not null default '{}'::jsonb,   -- {he, en}, with {{placeholders}}
+
+  /**
+   * Off by default. A template that exists is not the same as one the house
+   * has decided to send, and switching the whole thing on by writing rows
+   * would start messaging customers the moment the migration runs.
+   */
+  is_enabled boolean not null default false,
+
+  /** Minutes to wait before sending. Zero is immediate. */
+  delay_min  int not null default 0 check (delay_min between 0 and 10080),
+
+  updated_at timestamptz not null default now(),
+
+  unique (tenant_id, event, channel)
+);
+
+create trigger t_msg_templates_touch before update on message_templates
+  for each row execute function touch_updated_at();
+
+/**
+ * Every message the system tried to send.
+ *
+ * Written whether or not the send succeeded, because the question asked
+ * after a complaint is always "did we actually message them", and an empty
+ * answer is indistinguishable from a provider outage without this.
+ */
+create table message_log (
+  id         uuid primary key default gen_random_uuid(),
+  tenant_id  uuid not null references tenants(id) on delete cascade,
+
+  event      message_event   not null,
+  channel    message_channel not null default 'whatsapp',
+
+  to_addr    text not null,          -- phone in E.164, or an email address
+  body       text not null,          -- after substitution, exactly what was sent
+
+  -- Loose references: an order or registration may be deleted later and the
+  -- record of having messaged someone should outlive it.
+  order_id        uuid,
+  registration_id uuid,
+
+  ok          boolean not null,
+  provider_id text,                  -- the provider's own message id
+  error       text,
+
   created_at timestamptz not null default now()
 );
 
-create index on tips (tenant_id, sort) where is_active;
+create index on message_log (tenant_id, created_at desc);
+create index on message_log (order_id) where order_id is not null;
 
-alter table stays enable row level security;
-alter table tips  enable row level security;
+-- ------------------------------------------------------------------- rls
 
-create policy stays_read_public on stays for select using (is_active);
-create policy stays_write on stays
+alter table message_templates enable row level security;
+alter table message_log       enable row level security;
+
+-- Templates and the log are staff-only in both directions. Nothing here is
+-- public: the log contains customer phone numbers.
+create policy msg_templates_rw on message_templates
   for all using (app_can(tenant_id, 'staff')) with check (app_can(tenant_id, 'staff'));
 
-create policy tips_read_public on tips for select using (is_active);
-create policy tips_write on tips
-  for all using (app_can(tenant_id, 'staff')) with check (app_can(tenant_id, 'staff'));
-
--- ============================================================
--- 0017_event_template.sql
--- ============================================================
-
--- 0017_event_template.sql — the default shape every generated form starts from.
-
-/**
- * One row per tenant: the template the shabbat generator copies.
- *
- * Kept as JSON rather than as tables of template-meals and template-types
- * because nothing queries inside it — it is read whole when a form is
- * generated and written whole when the defaults are edited. Real meals and
- * real prices live in event_meals and registrant_types, where they can be
- * joined against registrations.
- */
-create table event_template (
-  tenant_id   uuid primary key references tenants(id) on delete cascade,
-
-  intro       jsonb not null default '{}'::jsonb,   -- {he, en}
-
-  /**
-   * [{ key, name:{he,en}, sort, serves_offset_min, capacity,
-   *    types:[{ name:{he,en}, kind, price, seats }] }]
-   *
-   * serves_offset_min is relative to candle lighting, so a meal keeps its
-   * place in the evening as sunset moves through the year instead of
-   * drifting against it.
-   */
-  meals       jsonb not null default '[]'::jsonb,
-
-  /** Which fields the public form asks for. */
-  ask_email        boolean not null default true,
-  ask_nationality  boolean not null default true,
-  ask_notes        boolean not null default true,
-  ask_participants boolean not null default true,
-
-  /** Suggested donation buttons, in shekels. */
-  donation_amounts int[] not null default '{0,50,100,180,360}',
-
-  /** How many forms the nightly generator keeps open ahead. */
-  weeks_ahead      int not null default 24 check (weeks_ahead between 1 and 104),
-  /** Registration closes this many hours before candle lighting. */
-  closes_hours_before int not null default 24 check (closes_hours_before between 0 and 336),
-
-  updated_at  timestamptz not null default now()
-);
-
-create trigger t_event_template_touch before update on event_template
-  for each row execute function touch_updated_at();
-
-alter table event_template enable row level security;
-
-create policy event_template_read on event_template
-  for select using (true);
-create policy event_template_write on event_template
-  for all using (app_can(tenant_id, 'staff'))
-  with check (app_can(tenant_id, 'staff'));
-
-insert into event_template (tenant_id)
-select id from tenants
-on conflict (tenant_id) do nothing;
+create policy msg_log_read on message_log
+  for select using (app_can(tenant_id, 'staff'));
