@@ -112,7 +112,12 @@
   --shadow-float: var(--shadow-float);
 
   --font-sans: var(--font-rubik);
-  --font-mono: var(--font-mono-ui);
+  /* IBM Plex Mono is loaded with the Latin subset only — it has no Hebrew
+     glyphs at all. Without a fallback family after it, Hebrew typed into a
+     monospaced field rendered as nothing: the WhatsApp template editor and
+     the receipt header looked like empty boxes while the Latin
+     placeholders beside them showed fine. */
+  --font-mono: var(--font-mono-ui), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 html { -webkit-text-size-adjust: 100%; }

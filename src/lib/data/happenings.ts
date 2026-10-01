@@ -13,7 +13,8 @@ export async function getHappenings(
   // The public board shows active entries only; the admin needs to see the
   // paused ones too, or a class switched off for the season becomes
   // invisible and gets created a second time.
-  let q = createServiceClient()
+  const sb = createServiceClient();
+  let q = sb
     .from('happenings')
     .select('*')
     .eq('tenant_id', TENANT_ID)
@@ -39,13 +40,16 @@ export async function getHappenings(
     details: (r.details ?? {}) as I18n,
     audience: (r.audience ?? {}) as I18n,
     location: (r.location ?? {}) as I18n,
-    weekday: (r.weekday as number | null) ?? null,
+    weekdays: ((r.weekdays as number[] | null) ?? []).slice().sort((a, b) => a - b),
     weekOfMonth: (r.week_of_month as number | null) ?? null,
     onDate: (r.on_date as string | null) ?? null,
     startsAt: (r.starts_at as string | null) ?? null,
     endsAt: (r.ends_at as string | null) ?? null,
     anchor: (r.anchor as string | null) ?? null,
     anchorOffsetMin: (r.anchor_offset_min as number) ?? 0,
+    imageUrl: r.image_path
+      ? sb.storage.from('content').getPublicUrl(r.image_path as string).data.publicUrl
+      : null,
     pausedNote: (r.paused_note ?? {}) as I18n,
     sort: (r.sort as number) ?? 0,
     isActive: r.is_active !== false,

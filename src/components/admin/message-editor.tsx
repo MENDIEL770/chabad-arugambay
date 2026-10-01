@@ -138,7 +138,9 @@ function One({
                 rows={9}
                 defaultValue={tpl.bodyHe}
                 onChange={(e) => setDraft(e.target.value)}
-                className="field font-mono text-[.84rem]"
+                // Prose, not a column grid: the house writes Hebrew sentences
+                // here, so it gets the body font like any other text box.
+                className="field text-[.88rem] leading-[1.6]"
               />
 
               <p className="mt-1 text-[.72rem] text-fg-subtle">

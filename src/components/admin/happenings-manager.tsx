@@ -8,6 +8,9 @@ import {
 } from '@/lib/data/happenings-view';
 import { RichTextField } from '@/components/admin/rich-text-field';
 import { runAction } from '@/lib/run-action';
+import { createUploadTicket, type Ticket } from '@/app/admin/upload-actions';
+import { uploadToTicket } from '@/lib/upload';
+import { UPLOAD_KINDS } from '@/lib/spec/uploads';
 import {
   deleteHappening, saveHappening, toggleHappening, type ActionResult,
 } from '@/app/admin/content/happenings/actions';
@@ -31,6 +34,27 @@ function Form({ item, onDone }: { item?: Happening; onDone: (r: ActionResult) =>
   const [pending, start] = useTransition();
   const [cycle, setCycle] = useState<HappeningCycle>(item?.cycle ?? 'weekly');
   const [anchor, setAnchor] = useState(item?.anchor ?? '');
+  const [days, setDays] = useState<number[]>(item?.weekdays ?? [5]);
+  const [poster, setPoster] = useState<string | null>(item?.imageUrl ?? null);
+  const [posterPath, setPosterPath] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function choosePoster(file: File | undefined) {
+    if (!file) return;
+    setUploading(true);
+    // Straight to Storage with a one-shot token — a flyer is routinely
+    // bigger than the 4.5MB a serverless request body can carry.
+    const ticket = await runAction(() =>
+      createUploadTicket('happening', file.type, file.size));
+    if (!ticket.ok) { setUploading(false); onDone(ticket as ActionResult); return; }
+
+    const up = await uploadToTicket(ticket as Ticket, file);
+    setUploading(false);
+    if (!up.ok) { onDone(up); return; }
+
+    setPosterPath(up.path);
+    setPoster(URL.createObjectURL(file));
+  }
 
   return (
     <form
@@ -70,12 +94,44 @@ function Form({ item, onDone }: { item?: Happening; onDone: (r: ActionResult) =>
           <input className="field" name="onDate" type="date" defaultValue={item?.onDate ?? ''} />
         </label>
       ) : (
-        <label>
-          <span className="label !mb-1">יום בשבוע</span>
-          <select className="field" name="weekday" defaultValue={item?.weekday ?? 5}>
-            {WEEKDAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
-          </select>
-        </label>
+        <fieldset className="col-span-2 max-[700px]:col-span-1">
+          <legend className="label !mb-1">באילו ימים</legend>
+          {/* Checkboxes rather than a multi-select: a shiur that meets on
+              Sunday and Wednesday was two separate rows before this, which
+              meant editing it twice and getting it wrong once. */}
+          <div className="flex flex-wrap gap-1.5">
+            {WEEKDAYS.map((d, i) => {
+              const on = days.includes(i);
+              return (
+                <label
+                  key={d}
+                  className={`cursor-pointer rounded-input border px-3 py-1.5 text-[.84rem] ${
+                    on
+                      ? 'border-accent bg-accent-soft text-accent-strong'
+                      : 'border-line text-fg-muted hover:border-accent/50'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    name="weekdays"
+                    value={i}
+                    checked={on}
+                    onChange={(e) =>
+                      setDays((prev) =>
+                        e.target.checked ? [...prev, i].sort((a, b) => a - b) : prev.filter((x) => x !== i),
+                      )
+                    }
+                    className="sr-only"
+                  />
+                  {d}
+                </label>
+              );
+            })}
+          </div>
+          {days.length === 0 && (
+            <span className="mt-1 block text-[.74rem] text-danger">צריך לבחור לפחות יום אחד.</span>
+          )}
+        </fieldset>
       )}
 
       {cycle === 'monthly' && (
@@ -141,7 +197,42 @@ function Form({ item, onDone }: { item?: Happening; onDone: (r: ActionResult) =>
       </div>
 
       <div className="col-span-2 max-[700px]:col-span-1">
-        <button type="submit" className="btn btn-accent btn-sm" disabled={pending}>
+        <span className="label !mb-1">מודעה או תמונה (לא חובה)</span>
+        <div className="flex flex-wrap items-center gap-3">
+          {poster && (
+            <div className="relative h-24 w-20 overflow-hidden rounded-input border border-line">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={poster} alt="" className="size-full object-cover" />
+            </div>
+          )}
+          <div>
+            <input
+              type="file"
+              accept={UPLOAD_KINDS.happening.formats.join(',')}
+              disabled={uploading}
+              onChange={(e) => void choosePoster(e.target.files?.[0])}
+              className="block w-full text-[.78rem] file:me-2 file:rounded-input file:border-0 file:bg-accent-soft file:px-3 file:py-1.5 file:text-accent-strong"
+            />
+            <span className="mt-1 block text-[.74rem] text-fg-subtle">
+              {uploading ? 'מעלה…' : 'פלייר להתוועדות, או תמונה להודעה.'}
+            </span>
+          </div>
+          {poster && (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm text-danger"
+              onClick={() => { setPoster(null); setPosterPath(''); }}
+            >
+              הסרה
+            </button>
+          )}
+        </div>
+        {/* Empty string means "clear it"; absent means "leave as it was". */}
+        {posterPath !== null && <input type="hidden" name="imagePath" value={posterPath} />}
+      </div>
+
+      <div className="col-span-2 max-[700px]:col-span-1">
+        <button type="submit" className="btn btn-accent btn-sm" disabled={pending || uploading}>
           {pending ? 'שומר…' : item ? 'שמירה' : 'הוספה'}
         </button>
       </div>

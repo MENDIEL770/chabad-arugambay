@@ -39,8 +39,11 @@ function fail(error: { message: string }): ActionResult {
   if (/has_a_time/.test(error.message)) {
     return { ok: false, message: 'צריך שעה קבועה או עיגון לזמן היום.' };
   }
-  if (/weekly_needs_weekday|monthly_needs_weekday/.test(error.message)) {
-    return { ok: false, message: 'צריך לבחור יום בשבוע.' };
+  if (/weekly_needs_days|monthly_needs_days|weekdays_in_range/.test(error.message)) {
+    return { ok: false, message: 'צריך לבחור לפחות יום אחד בשבוע.' };
+  }
+  if (/happenings.*weekdays|column .*weekdays/.test(error.message)) {
+    return { ok: false, message: 'חסרה המיגרציה 0019_happening_days.sql. הריצו אותה ב-SQL Editor.' };
   }
   if (/once_needs_date/.test(error.message)) {
     return { ok: false, message: 'צריך לבחור תאריך.' };
@@ -59,7 +62,7 @@ const Schema = z.object({
   detailsHe: z.string().trim().max(1000).default(''),
   audienceHe: z.string().trim().max(120).default(''),
   locationHe: z.string().trim().max(120).default(''),
-  weekday: z.string().default(''),
+
   weekOfMonth: z.string().default(''),
   onDate: z.string().default(''),
   startsAt: z.string().default(''),
@@ -94,9 +97,14 @@ export async function saveHappening(formData: FormData): Promise<ActionResult> {
       return { ok: false, message: 'שעת הסיום חייבת להיות אחרי שעת ההתחלה.' };
     }
 
-    const weekday = v.weekday === '' ? null : Number(v.weekday);
-    if ((v.cycle === 'weekly' || v.cycle === 'monthly') && weekday === null) {
-      return { ok: false, message: 'צריך לבחור יום בשבוע.' };
+    // A checkbox group posts one entry per ticked box, so the array has to
+    // be read off the FormData rather than the parsed object.
+    const weekdays = [...new Set(
+      formData.getAll('weekdays').map((d) => Number(d)).filter((d) => d >= 0 && d <= 6),
+    )].sort((a, b) => a - b);
+
+    if ((v.cycle === 'weekly' || v.cycle === 'monthly') && weekdays.length === 0) {
+      return { ok: false, message: 'צריך לבחור לפחות יום אחד בשבוע.' };
     }
     if (v.cycle === 'once' && !v.onDate) {
       return { ok: false, message: 'צריך לבחור תאריך.' };
@@ -113,13 +121,19 @@ export async function saveHappening(formData: FormData): Promise<ActionResult> {
       // Fields that belong to the other cycles are cleared, not left over:
       // a weekly class that used to be a one-off would otherwise keep a
       // stale date and trip the constraint later.
-      weekday: v.cycle === 'once' ? null : weekday,
+      weekdays: v.cycle === 'once' ? [] : weekdays,
       week_of_month: v.cycle === 'monthly' && v.weekOfMonth ? Number(v.weekOfMonth) : null,
       on_date: v.cycle === 'once' ? v.onDate : null,
       starts_at: startsAt,
       ends_at: v.endsAt || null,
       anchor,
       anchor_offset_min: anchor ? v.anchorOffsetMin : 0,
+      // Absent means leave the existing poster alone; an empty string is an
+      // explicit "remove it". Those are different intentions and collapsing
+      // them would delete a flyer on every unrelated edit.
+      ...(formData.has('imagePath')
+        ? { image_path: String(formData.get('imagePath')) || null }
+        : {}),
     };
 
     const sb = createServiceClient();
