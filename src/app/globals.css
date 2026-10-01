@@ -255,3 +255,60 @@ body {
   main { padding: 0 !important; }
   .wrap { max-width: none !important; padding: 0 !important; }
 }
+
+/* ---------------------------------------------------------------------------
+   Accessibility preferences.
+   Driven by attributes the panel writes onto <html>, so a choice survives
+   navigation without React re-applying it on every page.
+--------------------------------------------------------------------------- */
+:root { --a11y-scale: 1; }
+
+html { font-size: calc(100% * var(--a11y-scale)); }
+
+/* Raises text and border contrast without discarding the palette. */
+:root[data-a11y-contrast="on"] {
+  --fg: #000;
+  --fg-muted: #1a1a1a;
+  --fg-subtle: #333;
+  --line: #767676;
+  --line-strong: #000;
+  --accent-strong: #7a4a00;
+}
+:root[data-a11y-contrast="on"] .chip,
+:root[data-a11y-contrast="on"] .card {
+  border-color: var(--line-strong);
+}
+
+:root[data-a11y-underline="on"] a:not(.btn) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Honours the panel the same way the OS setting is honoured. */
+:root[data-a11y-stop-motion="on"] *,
+:root[data-a11y-stop-motion="on"] *::before,
+:root[data-a11y-stop-motion="on"] *::after {
+  animation-duration: .001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .001ms !important;
+  scroll-behavior: auto !important;
+}
+:root[data-a11y-stop-motion="on"] [data-reveal] {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* Wider letterforms and looser spacing, which helps most dyslexic readers
+   more than any single "dyslexia font" does. */
+:root[data-a11y-readable="on"] body {
+  font-family: Verdana, Tahoma, Arial, sans-serif;
+  letter-spacing: .02em;
+  word-spacing: .08em;
+  line-height: 1.85;
+}
+
+/* The floating controls must never cover the footer's last row. */
+@media print {
+  [aria-label="הגדרות נגישות"],
+  [aria-label="שליחת הודעה בוואטסאפ"] { display: none !important; }
+}

@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { StatusPill, type Closure } from './status-pill';
 import { ThemeToggle } from './theme-toggle';
 import { TENANT } from '@/lib/config';
-import { Icon } from '@/components/ui/icon';
 import { DesktopNav, MobileNav } from './site-nav';
 
 export function SiteHeader({
@@ -14,8 +13,6 @@ export function SiteHeader({
   statusLabel: string;
   closures: Closure[];
 }) {
-  const wa = `https://wa.me/${TENANT.whatsapp.replace(/[^\d]/g, '')}`;
-
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-bg/90 backdrop-blur-md">
       <div className="wrap flex h-[68px] items-center gap-5 max-[620px]:h-[62px] max-[620px]:gap-2.5">
@@ -37,10 +34,6 @@ export function SiteHeader({
           <StatusPill initialOpen={statusOpen} initialLabel={statusLabel} closures={closures} />
           <MobileNav />
           <ThemeToggle />
-          <a className="btn btn-accent max-[620px]:px-4" href={wa} target="_blank" rel="noopener noreferrer">
-            <Icon name="whatsapp" size={17} />
-            <span className="max-[620px]:hidden">וואטסאפ</span>
-          </a>
         </div>
       </div>
     </header>

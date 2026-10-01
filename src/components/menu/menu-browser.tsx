@@ -9,6 +9,7 @@ import {
 } from '@/lib/data/modifiers';
 import { ItemSheet } from './item-sheet';
 import { CheckoutSheet } from './checkout-sheet';
+import { CategoryNav } from './category-nav';
 import { DishGallery } from './dish-gallery';
 
 type Fulfillment = 'delivery' | 'pickup' | 'dine_in';
@@ -97,7 +98,14 @@ export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
 
   return (
     <>
-      <div className="mb-8 flex flex-wrap gap-2.5" role="group" aria-label="איך לקבל את ההזמנה">
+      {/* A segmented control rather than three cards. The cards were tall
+          enough to wrap onto two rows on a phone and pushed the menu itself
+          below the fold, for a choice most people never change. */}
+      <div
+        className="mb-5 flex rounded-pill border border-line-strong bg-surface p-1"
+        role="group"
+        aria-label="איך לקבל את ההזמנה"
+      >
         {FULFILLMENT.map((f) => {
           const on = fulfillment === f.id;
           return (
@@ -106,22 +114,32 @@ export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
               type="button"
               onClick={() => setFulfillment(f.id)}
               aria-pressed={on}
-              className={`flex flex-col items-start rounded-card border px-4.5 py-3 text-start transition-colors ${
-                on ? 'border-accent bg-accent-soft' : 'border-line-strong bg-bg hover:bg-surface'
+              className={`flex-1 rounded-pill px-3 py-2 text-[.86rem] font-medium whitespace-nowrap transition-colors ${
+                on ? 'bg-accent text-fg-on-accent shadow-sm' : 'text-fg-muted hover:text-fg'
               }`}
             >
-              <span className="font-medium">{f.label}</span>
-              <span className="text-[.76rem] text-fg-subtle">{f.hint}</span>
+              {f.label}
             </button>
           );
         })}
       </div>
 
+      <p className="mb-6 text-[.8rem] text-fg-subtle">
+        {FULFILLMENT.find((f) => f.id === fulfillment)?.hint}
+      </p>
+
+      <CategoryNav
+        categories={categories.map((c) => ({ id: c.id, label: c.name.he }))}
+      />
+
       <div className="grid grid-cols-[1fr_330px] items-start gap-9 max-[980px]:grid-cols-1">
         <div className="flex flex-col gap-10">
           {categories.map((cat) => (
             <section key={cat.id} aria-labelledby={`cat-${cat.id}`}>
-              <h2 id={`cat-${cat.id}`} className="mb-4 text-xl font-bold tracking-[-.01em]">
+              <h2
+                id={`cat-${cat.id}`}
+                className="mb-4 scroll-mt-[130px] text-xl font-bold tracking-[-.01em] max-[620px]:scroll-mt-[120px]"
+              >
                 {cat.name.he}
               </h2>
               <ul className="grid grid-cols-2 gap-4 max-[680px]:grid-cols-1">
@@ -266,6 +284,21 @@ export function MenuBrowser({ categories }: { categories: MenuCategory[] }) {
           )}
         </aside>
       </div>
+
+      {/* The cart panel sits below the whole menu on a phone, so without
+          this the only way to check out is to scroll past everything. */}
+      {count > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/95 p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] backdrop-blur-md min-[980px]:hidden">
+          <button
+            type="button"
+            onClick={() => setCheckingOut(true)}
+            className="btn btn-accent flex w-full items-center justify-between !px-5"
+          >
+            <span>להמשך הזמנה · {count}</span>
+            <span className="money">{formatLkr(total)}</span>
+          </button>
+        </div>
+      )}
 
       {checkingOut && (
         <CheckoutSheet

@@ -30,7 +30,8 @@ export default async function MenuPage() {
         closures={cal.closures}
       />
 
-      <main className="wrap flex-1 py-12">
+      {/* Room for the floating checkout bar, which is fixed on a phone. */}
+      <main className="wrap flex-1 py-12 max-[980px]:pb-24">
         <div className="mb-8 max-w-[60ch]">
           <span className="eyebrow">המסעדה</span>
           <h1 className="mt-2 mb-2.5 text-balance text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-[-.02em]">

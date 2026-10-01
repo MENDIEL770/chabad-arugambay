@@ -35,7 +35,7 @@ const COLUMNS = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto bg-ink-panel pt-13 pb-8 text-fg-on-dark">
+    <footer className="mt-auto bg-ink-panel pt-13 pb-8 text-fg-on-dark max-[520px]:pb-28">
       <div className="wrap">
         <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr] gap-9 max-[820px]:grid-cols-2 max-[820px]:gap-7">
           <div>

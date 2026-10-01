@@ -2,6 +2,8 @@ import { TENANT } from '@/lib/config';
 import type { Metadata } from 'next';
 import { Rubik, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
+import { AccessibilityMenu } from '@/components/site/accessibility-menu';
+import { FloatingWhatsApp } from '@/components/site/floating-whatsapp';
 
 /** One family for the whole product. Rubik carries Hebrew and Latin, so
  *  headings, body, admin and public share a single voice. */
@@ -35,7 +37,17 @@ export const metadata: Metadata = {
  * Applies the saved theme before the first paint. Inline and synchronous on
  * purpose: anything deferred lets the wrong theme show for a frame.
  */
-const THEME_BOOTSTRAP = `try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light'){document.documentElement.dataset.theme=t}}catch(e){}`;
+const THEME_BOOTSTRAP = `try{
+var r=document.documentElement;
+var t=localStorage.getItem('theme');
+if(t==='dark'||t==='light'){r.dataset.theme=t}
+var a=JSON.parse(localStorage.getItem('a11y')||'{}');
+if(a.fontScale){r.style.setProperty('--a11y-scale',String(a.fontScale))}
+if(a.contrast){r.dataset.a11yContrast='on'}
+if(a.underlineLinks){r.dataset.a11yUnderline='on'}
+if(a.stopMotion){r.dataset.a11yStopMotion='on'}
+if(a.readableFont){r.dataset.a11yReadable='on'}
+}catch(e){}`;
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
@@ -60,6 +72,8 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
           <style>{'[data-reveal]{opacity:1!important;transform:none!important}'}</style>
         </noscript>
         {children}
+        <FloatingWhatsApp />
+        <AccessibilityMenu />
       </body>
     </html>
   );
