@@ -62,7 +62,16 @@ describe('server actions authorise before acting', () => {
         .split('\n')
         .map((l) => l.trim())
         .find((l) => l && !l.startsWith('//') && !l.startsWith('*') && !l.startsWith('/*'));
-      if (!first || !/^return guarded\(/.test(first)) {
+      /**
+       * Two acceptable shapes, both of which authorise before anything else:
+       *   return guarded(role, …)      — the shared wrapper calls requireRole
+       *   await requireRole(role)      — called directly, inline or in a try
+       * Anything else reaches the service-role client unauthorised.
+       */
+      const viaWrapper = /^return guarded\(/.test(first ?? '');
+      const viaDirect =
+        /^(try \{|await requireRole\()/.test(first ?? '') && /await requireRole\(/.test(body);
+      if (!first || !(viaWrapper || viaDirect)) {
         unguarded.push(`${name} → ${(first ?? '<empty>').slice(0, 60)}`);
       }
     }

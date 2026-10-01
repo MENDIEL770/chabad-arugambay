@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { getMenu } from '@/lib/data/menu';
 import { getHomeCalendar } from '@/lib/data/calendar';
+import { getSiteText } from '@/lib/data/site-text';
+import { text } from '@/lib/site-text';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
 import { MenuBrowser } from '@/components/menu/menu-browser';
@@ -13,7 +15,11 @@ export const metadata: Metadata = {
 };
 
 export default async function MenuPage() {
-  const [menu, cal] = await Promise.all([getMenu(), Promise.resolve(getHomeCalendar())]);
+  const [menu, cal, copy] = await Promise.all([
+    getMenu(),
+    Promise.resolve(getHomeCalendar()),
+    getSiteText(),
+  ]);
   const active = menu.filter((c) => c.isActive && c.items.length > 0);
 
   return (
@@ -31,7 +37,7 @@ export default async function MenuPage() {
             התפריט
           </h1>
           <p className="text-fg-muted">
-            הכול כשר בהשגחת בית חב״ד, בשר וחלב בהפרדה מלאה. המחירים ברופי סרי-לנקי.
+            {text(copy, 'menu.intro')}
           </p>
           {!cal.status.isOpen && (
             <p className="mt-4 rounded-card border border-line bg-surface px-4 py-3 text-sm">

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { getHomeCalendar } from '@/lib/data/calendar';
+import { getSiteText } from '@/lib/data/site-text';
+import { text } from '@/lib/site-text';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
 import { TravelSearch } from '@/components/travel/travel-search';
@@ -9,8 +11,9 @@ export const metadata: Metadata = {
   description: 'איפה לישון ומה לעשות בארוגם ביי — המלצות ממי שגר כאן.',
 };
 
-export default function TravelPage() {
+export default async function TravelPage() {
   const cal = getHomeCalendar();
+  const copy = await getSiteText();
   return (
     <>
       <SiteHeader statusOpen={cal.status.isOpen} statusLabel={cal.status.label} closures={cal.closures} />
@@ -21,7 +24,7 @@ export default function TravelPage() {
             איפה לישון ומה לעשות בארוגם ביי
           </h1>
           <p className="text-fg-muted">
-            המלצות ממי שגר כאן, לא מבלוגים. אם משהו חסר — שאלו בוואטסאפ ונוסיף אותו.
+            {text(copy, 'travel.intro')}
           </p>
         </div>
         <TravelSearch />

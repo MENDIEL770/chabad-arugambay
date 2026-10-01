@@ -3,6 +3,8 @@ import { DateTime } from 'luxon';
 import Link from 'next/link';
 import { getHomeCalendar, getUpcomingOccasions } from '@/lib/data/calendar';
 import { getOpenEvents } from '@/lib/data/events';
+import { getSiteText } from '@/lib/data/site-text';
+import { text } from '@/lib/site-text';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
 import type { Occasion } from '@/lib/calendar/occasions';
@@ -33,6 +35,7 @@ function DayRange({ o }: { o: Occasion }) {
 export default async function ShabbatPage() {
   const cal = getHomeCalendar();
   const occasions = getUpcomingOccasions(24);
+  const copy = await getSiteText();
   const events = await getOpenEvents();
 
   /**
@@ -60,8 +63,7 @@ export default async function ShabbatPage() {
             הזמנים והסעודות
           </h1>
           <p className="text-fg-muted">
-            זמנים לשיטת אדמו״ר הזקן, מחושבים למיקום של ארוגם ביי. הדלקת נרות
-            18 דקות לפני השקיעה.
+            {text(copy, 'shabbat.intro')}
           </p>
         </div>
 
@@ -143,8 +145,7 @@ export default async function ShabbatPage() {
         </ul>
 
         <p className="mt-4 text-[.8rem] text-fg-subtle">
-          טפסי ההרשמה נפתחים אוטומטית 24 שבתות מראש. מי שמגיע בלי להירשם —
-          תמיד יש מקום, פשוט קשה יותר לתכנן כמה אוכל להכין.
+          {text(copy, 'shabbat.footnote')}
         </p>
       </main>
 

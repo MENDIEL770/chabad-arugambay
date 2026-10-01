@@ -121,8 +121,9 @@ export default async function WhatsOnPage() {
                   <div className="text-start">
                     <span className="block text-[.78rem] text-fg-muted">{describeWhen(h)}</span>
                     {next && (
-                      <span className="clock text-[.8rem] text-fg-subtle">
-                        הקרוב: {next.setLocale('he').toFormat('ccc HH:mm')}
+                      <span className="text-[.8rem] text-fg-subtle">
+                        הקרוב: {next.setLocale('he').toFormat('ccc')}{' '}
+                        <span className="clock">{next.toFormat('HH:mm')}</span>
                       </span>
                     )}
                   </div>

@@ -4,6 +4,8 @@ import { getMenu } from '@/lib/data/menu';
 import { getHeroSlides } from '@/lib/data/hero';
 import { isSellable } from '@/lib/data/types';
 import { formatLkr, TENANT } from '@/lib/config';
+import { getSiteText } from '@/lib/data/site-text';
+import { text, type TextOverrides } from '@/lib/site-text';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
 import { HeroSky } from '@/components/site/hero-sky';
@@ -21,7 +23,13 @@ export const revalidate = 3600;
  * inside the carousel — a slide that carries its own headline replaces it
  * while that slide is on screen.
  */
-function HeroCopy({ cal, onImage = false }: { cal: HomeCalendar; onImage?: boolean }) {
+function HeroCopy({
+  cal, copy, onImage = false,
+}: {
+  cal: HomeCalendar;
+  copy: TextOverrides;
+  onImage?: boolean;
+}) {
   // Over a photograph the text needs its own contrast; on the plain backdrop
   // it should use the normal palette so dark mode still works.
   const tone = onImage
@@ -58,8 +66,7 @@ function HeroCopy({ cal, onImage = false }: { cal: HomeCalendar; onImage?: boole
       )}
 
       <p className={`max-w-[47ch] text-[1.1rem] ${tone.lede}`}>
-        סעודות על שפת הים, מקום לישון למי שצריך, ואוכל כשר כל השבוע.
-        כל מי שעובר בארוגם ביי מוזמן.
+        {text(copy, 'home.lede')}
       </p>
 
       <div className="mt-7.5 flex flex-wrap gap-3 max-[560px]:flex-col max-[560px]:items-stretch">
@@ -96,7 +103,7 @@ function HeroCopy({ cal, onImage = false }: { cal: HomeCalendar; onImage?: boole
 
 export default async function HomePage() {
   const cal = getHomeCalendar();
-  const [menu, slides] = await Promise.all([getMenu(), getHeroSlides()]);
+  const [menu, slides, copy] = await Promise.all([getMenu(), getHeroSlides(), getSiteText()]);
   const highlights = menu.flatMap((c) => c.items).slice(0, 4);
 
   return (
@@ -110,13 +117,13 @@ export default async function HomePage() {
       <main className="flex-1">
         {slides.length > 0 ? (
           <HeroCarousel slides={slides}>
-            <HeroCopy cal={cal} onImage />
+            <HeroCopy cal={cal} copy={copy} onImage />
           </HeroCarousel>
         ) : (
           <section className="relative overflow-hidden border-b border-line">
             <HeroSky />
             <div className="wrap relative pt-19 pb-21 max-[900px]:pt-13 max-[900px]:pb-15">
-              <HeroCopy cal={cal} />
+              <HeroCopy cal={cal} copy={copy} />
             </div>
           </section>
         )}
@@ -125,12 +132,12 @@ export default async function HomePage() {
         <section className="py-18">
           <div className="wrap">
             <div className="mb-8.5 max-w-[60ch]">
-              <span className="eyebrow">מה אפשר לעשות כאן</span>
+              <span className="eyebrow">{text(copy, 'home.services.eyebrow')}</span>
               <h2 className="mt-2 mb-2.5 text-balance text-[clamp(1.6rem,3vw,2.1rem)] font-bold tracking-[-.015em]">
-                כל מה שקורה בבית, במקום אחד
+                {text(copy, 'home.services.title')}
               </h2>
               <p className="text-fg-muted">
-                הרשמה, אוכל, טיולים ותשובות — בלי לחפש במי-יודע-איזו קבוצת וואטסאפ.
+                {text(copy, 'home.services.body')}
               </p>
             </div>
             <ServiceCards />
@@ -142,11 +149,10 @@ export default async function HomePage() {
             <div>
               <span className="eyebrow">המסעדה</span>
               <h2 className="mt-2 mb-3 text-balance text-[clamp(1.6rem,3vw,2.1rem)] font-bold tracking-[-.015em]">
-                אוכל כשר, חם, על החוף
+                {text(copy, 'home.restaurant.title')}
               </h2>
               <p className="text-fg-muted">
-                בשר וחלב בהפרדה מלאה, בהשגחת בית חב״ד. מזמינים מהטלפון, ומקבלים
-                עדכון בוואטסאפ בכל שלב — מהמטבח ועד שהנהג בדרך.
+                {text(copy, 'home.restaurant.body')}
               </p>
               <div className="mt-4 flex items-center gap-3 rounded-card bg-accent-soft px-4.5 py-3.5 text-sm">
                 <Icon name="scooter" size={21} className="shrink-0 text-accent-strong" />

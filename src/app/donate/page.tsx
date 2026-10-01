@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { getHomeCalendar } from '@/lib/data/calendar';
+import { getSiteText } from '@/lib/data/site-text';
+import { text } from '@/lib/site-text';
 import { SiteHeader } from '@/components/site/site-header';
 import { SiteFooter } from '@/components/site/site-footer';
 import { TENANT } from '@/lib/config';
@@ -8,8 +10,9 @@ export const metadata: Metadata = { title: 'תרומה' };
 
 const AMOUNTS = [50, 100, 180, 360, 1000];
 
-export default function DonatePage() {
+export default async function DonatePage() {
   const cal = getHomeCalendar();
+  const copy = await getSiteText();
   const wa = `https://wa.me/${TENANT.whatsapp.replace(/[^\d]/g, '')}`;
 
   return (
@@ -19,11 +22,10 @@ export default function DonatePage() {
         <div className="max-w-[58ch]">
           <span className="eyebrow">תרומה</span>
           <h1 className="mt-2 mb-3 text-balance text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-[-.02em]">
-            הסעודות פתוחות לכל מי שמגיע
+            {text(copy, 'donate.title')}
           </h1>
           <p className="text-fg-muted">
-            אף אחד לא משלם כדי להיכנס, ואף אחד לא נשאר בחוץ בגלל כסף. מי שיכול
-            לעזור — עוזר לנו להמשיך להאכיל את מי שלא יכול.
+            {text(copy, 'donate.body')}
           </p>
 
           <div className="card mt-7">

@@ -10,6 +10,7 @@ const MODULES = [
   { href: '/kitchen', label: 'מסך מטבח' },
   { href: '/admin/orders', label: 'הזמנות' },
   { href: '/admin/settings', label: 'הגדרות' },
+  { href: '/admin/settings/text', label: 'טקסטים' },
   { href: '/admin/settings/hero', label: 'תמונות רקע' },
 ];
 
