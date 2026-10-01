@@ -47,8 +47,21 @@ const FUNCTIONS: Record<string, { name: string; args: Record<string, unknown> }[
 const COLUMNS: Record<string, { table: string; column: string }[]> = {
   '0006_order_tracking': [{ table: 'orders', column: 'track_token' }],
   '0013_receipt_media': [{ table: 'receipt_template', column: 'logo_path' }],
+  // 0019 adds no table. Listed with an empty table array it printed a tick
+  // while checking nothing at all — the same vacuous pass this script was
+  // written to stop.
+  '0019_happening_days': [
+    { table: 'happenings', column: 'weekdays' },
+    { table: 'happenings', column: 'image_path' },
+  ],
+  '0016_travel': [{ table: 'tips', column: 'image_path' }],
+  '0018_messages': [{ table: 'message_templates', column: 'delay_min' }],
 };
 
+/**
+ * A migration must give this script something to look for. An entry with no
+ * tables, no columns and no functions prints a tick that means nothing.
+ */
 const BY_MIGRATION: Record<string, string[]> = {
   '0001_core':          ['tenants', 'memberships', 'tenant_settings'],
   '0002_calendar':      ['tenant_zmanim'],
@@ -64,7 +77,6 @@ const BY_MIGRATION: Record<string, string[]> = {
   '0016_travel':        ['stays', 'tips'],
   '0017_event_template':['event_template'],
   '0018_messages':      ['message_templates', 'message_log'],
-  '0019_happening_days':[],
 };
 
 /** A function that exists raises its own error; a missing one says so. */
