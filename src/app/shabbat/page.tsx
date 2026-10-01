@@ -33,7 +33,7 @@ function DayRange({ o }: { o: Occasion }) {
 }
 
 export default async function ShabbatPage() {
-  const cal = getHomeCalendar();
+  const cal = await getHomeCalendar();
   const occasions = getUpcomingOccasions(24);
   const copy = await getSiteText();
   const events = await getOpenEvents();
@@ -53,8 +53,7 @@ export default async function ShabbatPage() {
       <SiteHeader
         statusOpen={cal.status.isOpen}
         statusLabel={cal.status.label}
-        closures={cal.closures}
-      />
+        closures={cal.closures} week={cal.week} />
 
       <main className="wrap flex-1 py-12">
         <div className="mb-9 max-w-[60ch]">

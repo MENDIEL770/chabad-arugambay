@@ -106,7 +106,7 @@ function HeroCopy({
 }
 
 export default async function HomePage() {
-  const cal = getHomeCalendar();
+  const cal = await getHomeCalendar();
   const [menu, slides, copy, about, featured] = await Promise.all([
     getMenu(),
     getHeroSlides(),
@@ -121,8 +121,7 @@ export default async function HomePage() {
       <SiteHeader
         statusOpen={cal.status.isOpen}
         statusLabel={cal.status.label}
-        closures={cal.closures}
-      />
+        closures={cal.closures} week={cal.week} />
 
       <main className="flex-1">
         {slides.length > 0 ? (

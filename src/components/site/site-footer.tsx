@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { TENANT } from '@/lib/config';
+import { LogoMark } from '@/components/ui/logo';
 
 const COLUMNS = [
   {
@@ -40,9 +41,7 @@ export function SiteFooter() {
         <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr] gap-9 max-[820px]:grid-cols-2 max-[820px]:gap-7">
           <div>
             <div className="mb-3.5 flex items-center gap-3 text-white">
-              <span className="grid size-[36px] place-items-center rounded-full bg-accent font-bold text-fg-on-accent">
-                ח
-              </span>
+              <LogoMark size={40} className="shrink-0" />
               <span className="flex flex-col leading-tight">
                 <span className="font-bold">
                   {TENANT.name.he} – {TENANT.region.he}

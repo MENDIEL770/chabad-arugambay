@@ -12,11 +12,11 @@ export const metadata: Metadata = {
 };
 
 export default async function TravelPage() {
-  const cal = getHomeCalendar();
+  const cal = await getHomeCalendar();
   const copy = await getSiteText();
   return (
     <>
-      <SiteHeader statusOpen={cal.status.isOpen} statusLabel={cal.status.label} closures={cal.closures} />
+      <SiteHeader statusOpen={cal.status.isOpen} statusLabel={cal.status.label} closures={cal.closures} week={cal.week} />
       <main className="wrap flex-1 py-12">
         <div className="mb-7 max-w-[62ch]">
           <span className="eyebrow">טיולים והמלצות</span>

@@ -4,7 +4,7 @@ import { getMenu } from '@/lib/data/menu';
 import { isSellable } from '@/lib/data/types';
 
 export default async function AdminHome() {
-  const cal = getHomeCalendar();
+  const cal = await getHomeCalendar();
   const menu = await getMenu();
   const items = menu.flatMap((c) => c.items);
   const soldOut = items.filter((i) => !isSellable(i));

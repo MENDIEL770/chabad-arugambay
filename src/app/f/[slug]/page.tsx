@@ -23,7 +23,7 @@ export default async function RegisterPage({ params }: PageProps<'/f/[slug]'>) {
   const { slug } = await params;
   const [event, cal] = await Promise.all([
     getEventBySlug(slug),
-    Promise.resolve(getHomeCalendar()),
+    getHomeCalendar(),
   ]);
 
   if (!event) notFound();
@@ -45,8 +45,7 @@ export default async function RegisterPage({ params }: PageProps<'/f/[slug]'>) {
       <SiteHeader
         statusOpen={cal.status.isOpen}
         statusLabel={cal.status.label}
-        closures={cal.closures}
-      />
+        closures={cal.closures} week={cal.week} />
 
       <main className="wrap flex-1 py-12">
         <div className="mx-auto mb-8 max-w-[620px]">

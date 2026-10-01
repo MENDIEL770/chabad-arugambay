@@ -14,11 +14,11 @@ export const metadata: Metadata = {
 };
 
 export default async function AboutPage() {
-  const [about, cal] = await Promise.all([getAbout(), Promise.resolve(getHomeCalendar())]);
+  const [about, cal] = await Promise.all([getAbout(), getHomeCalendar()]);
 
   return (
     <>
-      <SiteHeader statusOpen={cal.status.isOpen} statusLabel={cal.status.label} closures={cal.closures} />
+      <SiteHeader statusOpen={cal.status.isOpen} statusLabel={cal.status.label} closures={cal.closures} week={cal.week} />
       <main className="flex-1">
         <AboutSection about={about} />
         <ContactSection statusLabel={cal.status.label} />

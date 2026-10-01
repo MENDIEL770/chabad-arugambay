@@ -1,5 +1,3 @@
--- Run in the Supabase SQL Editor, then: npm run check:tables
-
 -- 0016_travel.sql — places to stay and things to do, editable from the admin.
 
 create type stay_tier as enum ('luxury','standard','backpacker','family');

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AskPage() {
-  const cal = getHomeCalendar();
+  const cal = await getHomeCalendar();
   const menu = await getMenu();
 
   const sellable = menu.flatMap((c) => c.items).filter(isSellable);
@@ -54,7 +54,7 @@ export default async function AskPage() {
 
   return (
     <>
-      <SiteHeader statusOpen={cal.status.isOpen} statusLabel={cal.status.label} closures={cal.closures} />
+      <SiteHeader statusOpen={cal.status.isOpen} statusLabel={cal.status.label} closures={cal.closures} week={cal.week} />
       <main className="wrap flex-1 py-12">
         <div className="mb-7 max-w-[62ch]">
           <span className="eyebrow">שאלו אותנו</span>

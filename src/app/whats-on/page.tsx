@@ -24,7 +24,7 @@ const KIND_ICON: Record<Happening['kind'], IconName> = {
 };
 
 export default async function WhatsOnPage() {
-  const cal = getHomeCalendar();
+  const cal = await getHomeCalendar();
   const happenings = await getHappenings();
   const now = DateTime.now().setZone(TENANT.point.timezone);
 
@@ -45,8 +45,7 @@ export default async function WhatsOnPage() {
       <SiteHeader
         statusOpen={cal.status.isOpen}
         statusLabel={cal.status.label}
-        closures={cal.closures}
-      />
+        closures={cal.closures} week={cal.week} />
 
       <main className="wrap flex-1 py-12">
         <div className="mb-9 max-w-[62ch]">

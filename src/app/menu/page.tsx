@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export default async function MenuPage() {
   const [menu, cal, copy] = await Promise.all([
     getMenu(),
-    Promise.resolve(getHomeCalendar()),
+    getHomeCalendar(),
     getSiteText(),
   ]);
   const active = menu.filter((c) => c.isActive && c.items.length > 0);
@@ -27,8 +27,7 @@ export default async function MenuPage() {
       <SiteHeader
         statusOpen={cal.status.isOpen}
         statusLabel={cal.status.label}
-        closures={cal.closures}
-      />
+        closures={cal.closures} week={cal.week} />
 
       {/* Room for the floating checkout bar, which is fixed on a phone. */}
       <main className="wrap flex-1 py-12 max-[980px]:pb-24">

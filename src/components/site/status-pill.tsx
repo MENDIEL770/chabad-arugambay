@@ -4,10 +4,19 @@ import { useEffect, useState } from 'react';
 
 export interface Closure { from: string; to: string; why: string }
 
-const OPEN_MIN = 11 * 60;
-const CLOSE_MIN = 21 * 60 + 30;
+export interface DayWindow {
+  weekday: number;
+  opens: string;
+  closes: string;
+  isClosed: boolean;
+}
 
-function decide(now: Date, closures: Closure[]) {
+const toMinutes = (hhmm: string) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+};
+
+function decide(now: Date, closures: Closure[], week: DayWindow[]) {
   for (const c of closures) {
     const from = new Date(c.from);
     const to = new Date(c.to);
@@ -21,11 +30,18 @@ function decide(now: Date, closures: Closure[]) {
     }
   }
   const mins = now.getHours() * 60 + now.getMinutes();
-  if (mins < OPEN_MIN) return { open: false, label: 'נפתח ב-11:00', short: 'סגור' };
-  if (mins >= CLOSE_MIN) {
-    return { open: false, label: 'סגור · נפתח מחר ב-11:00', short: 'סגור' };
+  // getDay() is already 0 for Sunday, matching the table.
+  const today = week.find((d) => d.weekday === now.getDay());
+  if (!today) return { open: true, label: 'פתוח', short: 'פתוח' };
+
+  if (today.isClosed) return { open: false, label: 'סגור היום', short: 'סגור' };
+  if (mins < toMinutes(today.opens)) {
+    return { open: false, label: `נפתח ב-${today.opens}`, short: 'סגור' };
   }
-  return { open: true, label: 'פתוח · הזמנות עד 21:30', short: 'פתוח' };
+  if (mins >= toMinutes(today.closes)) {
+    return { open: false, label: 'סגור · נפתח מחר', short: 'סגור' };
+  }
+  return { open: true, label: `פתוח · הזמנות עד ${today.closes}`, short: 'פתוח' };
 }
 
 /**
@@ -40,10 +56,12 @@ export function StatusPill({
   initialOpen,
   initialLabel,
   closures,
+  week,
 }: {
   initialOpen: boolean;
   initialLabel: string;
   closures: Closure[];
+  week: DayWindow[];
 }) {
   const [state, setState] = useState({
     open: initialOpen,
@@ -52,11 +70,11 @@ export function StatusPill({
   });
 
   useEffect(() => {
-    const tick = () => setState(decide(new Date(), closures));
+    const tick = () => setState(decide(new Date(), closures, week));
     tick();
     const id = setInterval(tick, 60_000);
     return () => clearInterval(id);
-  }, [closures]);
+  }, [closures, week]);
 
   return (
     <span

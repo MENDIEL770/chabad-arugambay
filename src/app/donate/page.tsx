@@ -11,13 +11,13 @@ export const metadata: Metadata = { title: 'תרומה' };
 const AMOUNTS = [50, 100, 180, 360, 1000];
 
 export default async function DonatePage() {
-  const cal = getHomeCalendar();
+  const cal = await getHomeCalendar();
   const copy = await getSiteText();
   const wa = `https://wa.me/${TENANT.whatsapp.replace(/[^\d]/g, '')}`;
 
   return (
     <>
-      <SiteHeader statusOpen={cal.status.isOpen} statusLabel={cal.status.label} closures={cal.closures} />
+      <SiteHeader statusOpen={cal.status.isOpen} statusLabel={cal.status.label} closures={cal.closures} week={cal.week} />
       <main className="wrap flex-1 py-12">
         <div className="max-w-[58ch]">
           <span className="eyebrow">תרומה</span>

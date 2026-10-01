@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/icon';
+import { SubmittingOverlay } from '@/components/ui/submitting-overlay';
 import { PhoneField } from '@/components/ui/phone-field';
 import type { EventRecord } from '@/lib/data/events';
 import { register, type RegisterInput } from '@/app/f/[slug]/actions';
@@ -150,6 +151,12 @@ export function RegisterForm({ event }: { event: EventRecord }) {
   }
 
   return (
+    <>
+      <SubmittingOverlay
+        show={pending}
+        label="רושמים אתכם…"
+        patience="עוד רגע — שומרים את הפרטים ושולחים אישור."
+      />
     <form action={submit} onKeyDown={advanceOnEnter} className="mx-auto max-w-[620px]">
       <ol className="mb-8 flex gap-2" aria-label="שלבי ההרשמה">
         {STEPS.map((s, i) => (
@@ -426,5 +433,6 @@ export function RegisterForm({ event }: { event: EventRecord }) {
         </div>
       </div>
     </form>
+    </>
   );
 }

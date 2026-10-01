@@ -28,6 +28,7 @@ export const SECTIONS: { title: string; entries: Entry[] }[] = [
       { href: '/kitchen', label: 'מסך מטבח', icon: 'utensils', hint: 'המסך של המטבח' },
       { href: '/admin/restaurant/menu', label: 'תפריט ומלאי', icon: 'dish' },
       { href: '/admin/restaurant/receipt', label: 'עיצוב הקבלה', icon: 'image' },
+      { href: '/admin/settings/hours', label: 'שעות פתיחה', icon: 'clock' },
     ],
   },
   {
@@ -41,6 +42,7 @@ export const SECTIONS: { title: string; entries: Entry[] }[] = [
     entries: [
       { href: '/admin/settings/hero', label: 'תמונות רקע', icon: 'image' },
       { href: '/admin/settings/text', label: 'טקסטים', icon: 'sparkle', hint: 'כל משפט באתר' },
+      { href: '/admin/content/travel', label: 'טיולים והמלצות', icon: 'map', hint: 'לינה ופעילויות' },
     ],
   },
   {

@@ -10,11 +10,11 @@ export const metadata: Metadata = {
   description: 'מדריכים ומידע למי שמגיע לארוגם ביי.',
 };
 
-export default function ArticlesPage() {
-  const cal = getHomeCalendar();
+export default async function ArticlesPage() {
+  const cal = await getHomeCalendar();
   return (
     <>
-      <SiteHeader statusOpen={cal.status.isOpen} statusLabel={cal.status.label} closures={cal.closures} />
+      <SiteHeader statusOpen={cal.status.isOpen} statusLabel={cal.status.label} closures={cal.closures} week={cal.week} />
       <main className="wrap flex-1 py-12">
         <div className="mb-8 max-w-[60ch]">
           <span className="eyebrow">מאמרים ומידע</span>

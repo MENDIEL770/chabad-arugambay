@@ -312,3 +312,29 @@ html { font-size: calc(100% * var(--a11y-scale)); }
   [aria-label="הגדרות נגישות"],
   [aria-label="שליחת הודעה בוואטסאפ"] { display: none !important; }
 }
+
+/* ---------------------------------------------------------------------------
+   Logo animation. Used only in the loading overlay, so it never distracts
+   from the page itself.
+--------------------------------------------------------------------------- */
+@keyframes logo-arm-in {
+  0%, 100% { opacity: .25; }
+  50%      { opacity: 1; }
+}
+@keyframes logo-flicker {
+  0%, 100% { transform: scaleY(1) scaleX(1); opacity: 1; }
+  40%      { transform: scaleY(1.18) scaleX(.92); opacity: .9; }
+  70%      { transform: scaleY(.94) scaleX(1.05); opacity: 1; }
+}
+
+.logo-arm { animation: logo-arm-in 1.6s ease-in-out infinite; }
+.logo-arm-1 { animation-delay: 0s; }
+.logo-arm-2 { animation-delay: .18s; }
+.logo-arm-3 { animation-delay: .36s; }
+.logo-flame { animation: logo-flicker 1.1s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-arm, .logo-flame { animation: none; }
+}
+:root[data-a11y-stop-motion="on"] .logo-arm,
+:root[data-a11y-stop-motion="on"] .logo-flame { animation: none; }

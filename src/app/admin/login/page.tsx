@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { signIn, type LoginState } from './actions';
+import { LogoMark } from '@/components/ui/logo';
 
 function LoginForm() {
   const params = useSearchParams();
@@ -15,9 +16,7 @@ function LoginForm() {
   return (
     <form action={action} className="card w-full max-w-[380px]">
       <div className="mb-5 flex items-center gap-3">
-        <span className="grid size-9 place-items-center rounded-full bg-accent font-bold text-fg-on-accent">
-          ח
-        </span>
+        <LogoMark size={34} />
         <div>
           <h1 className="font-bold leading-tight">ניהול</h1>
           <p className="text-[.78rem] text-fg-subtle">בית חב״ד ארוגם ביי</p>

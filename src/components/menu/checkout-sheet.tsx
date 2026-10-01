@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/icon';
+import { SubmittingOverlay } from '@/components/ui/submitting-overlay';
 import { PhoneField } from '@/components/ui/phone-field';
 import { formatLkr } from '@/lib/config';
 import { placeOrder, type OrderInput } from '@/app/menu/actions';
@@ -90,6 +91,12 @@ export function CheckoutSheet({
   const pay = PAY_OPTIONS[fulfillment];
 
   return (
+    <>
+      <SubmittingOverlay
+        show={pending}
+        label="שולחים את ההזמנה…"
+        patience="עוד רגע — מעבירים אותה למטבח."
+      />
     <div
       className="fixed inset-0 z-[100] flex items-end justify-center bg-black/45 sm:items-center"
       onClick={(e) => { if (e.target === e.currentTarget && !pending) onClose(); }}
@@ -245,5 +252,6 @@ export function CheckoutSheet({
         />
       )}
     </div>
+    </>
   );
 }

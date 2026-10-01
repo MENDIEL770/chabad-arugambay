@@ -3,6 +3,7 @@ import { hasSupabase, TENANT } from '@/lib/config';
 import { getActor } from '@/lib/auth';
 import { signOut } from './login/actions';
 import { AdminMobileNav, AdminSidebar } from '@/components/admin/admin-sidebar';
+import { LogoMark } from '@/components/ui/logo';
 
 /**
  * Admin shell: a rail on the right, content beside it.
@@ -20,9 +21,7 @@ export default async function AdminLayout({ children }: LayoutProps<'/admin'>) {
       <header className="sticky top-0 z-50 border-b border-line bg-bg">
         <div className="wrap flex h-16 items-center gap-4">
           <Link href="/admin" className="flex items-center gap-2.5 font-bold whitespace-nowrap">
-            <span className="grid size-8 place-items-center rounded-full bg-accent text-sm text-fg-on-accent">
-              ח
-            </span>
+            <LogoMark size={30} className="shrink-0" />
             <span className="max-[560px]:hidden">{TENANT.name.he}</span>
             <span className="chip">ניהול</span>
           </Link>
