@@ -6,8 +6,8 @@ import { toWaNumber, type SendResult, type WhatsAppProvider } from './provider';
  * Sends through a linked WhatsApp account rather than the official Cloud
  * API, which means no template approval and no per-message cost, at the
  * price of depending on a session that can be logged out from the phone.
- * `getStateInstance` is exposed so the admin can show whether that session
- * is still authorised instead of silently failing to send.
+ * `getState` is exposed so the admin can show whether that session is
+ * still authorised instead of silently failing to send.
  */
 class GreenApiProvider implements WhatsAppProvider {
   readonly id = 'green' as const;

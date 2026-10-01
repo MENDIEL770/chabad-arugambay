@@ -63,6 +63,7 @@ const BY_MIGRATION: Record<string, string[]> = {
   '0013_receipt_media': [],
   '0016_travel':        ['stays', 'tips'],
   '0017_event_template':['event_template'],
+  '0018_messages':      ['message_templates', 'message_log'],
 };
 
 /** A function that exists raises its own error; a missing one says so. */

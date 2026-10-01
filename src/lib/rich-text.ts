@@ -47,8 +47,16 @@ function parseInline(src: string): Inline[] {
   while (i < src.length) {
     // Bold before italic: `**` would otherwise be read as two italics.
     if (src.startsWith('**', i)) {
-      const end = src.indexOf('**', i + 2);
+      let end = src.indexOf('**', i + 2);
       if (end > i + 2) {
+        // `**bold *italic***` ends in a run of three. The bold closer is the
+        // LAST two asterisks of that run, not the first two — taking the
+        // first two swallows the italic's own closer and leaves a stray
+        // asterisk in the output.
+        let runEnd = end;
+        while (src[runEnd] === '*') runEnd += 1;
+        if (runEnd - end > 2) end = runEnd - 2;
+
         flush();
         out.push({ t: 'b', v: parseInline(src.slice(i + 2, end)) });
         i = end + 2;

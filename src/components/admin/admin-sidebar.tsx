@@ -43,11 +43,12 @@ export const SECTIONS: { title: string; entries: Entry[] }[] = [
       { href: '/admin/settings/hero', label: 'תמונות רקע', icon: 'image' },
       { href: '/admin/settings/text', label: 'טקסטים', icon: 'sparkle', hint: 'כל משפט באתר' },
       { href: '/admin/content/travel', label: 'טיולים והמלצות', icon: 'map', hint: 'לינה ופעילויות' },
+      { href: '/admin/content/messages', label: 'הודעות ללקוחות', icon: 'message', hint: 'וואטסאפ אוטומטי' },
     ],
   },
   {
     title: 'מערכת',
-    entries: [{ href: '/admin/settings', label: 'הגדרות', icon: 'map' }],
+    entries: [{ href: '/admin/settings', label: 'הגדרות', icon: 'gear' }],
   },
 ];
 

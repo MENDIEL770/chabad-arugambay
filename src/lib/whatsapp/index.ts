@@ -1,12 +1,23 @@
 import 'server-only';
 import { createServiceClient } from '@/lib/supabase/server';
-import { hasSupabase, TENANT_ID } from '@/lib/config';
+import { formatLkr, hasSupabase, TENANT_ID } from '@/lib/config';
 import { greenApi } from './green-api';
 import { NullProvider, type WhatsAppProvider } from './provider';
-import { messageForStatus, type OrderMessageContext } from './messages';
+import { type OrderMessageContext } from './messages';
+import { eventForOrderStatus } from './catalogue';
+import { renderFor } from './templates';
 
 export { messageForStatus } from './messages';
 export type { OrderMessageContext } from './messages';
+export { getTemplates, renderFor } from './templates';
+
+const HOUSE_NAME = 'בית חב״ד ארוגם ביי';
+
+const FULFILLMENT_LABEL: Record<OrderMessageContext['fulfillment'], string> = {
+  delivery: 'משלוח',
+  pickup: 'איסוף עצמי',
+  dine_in: 'ישיבה במקום',
+};
 
 export function provider(): WhatsAppProvider {
   return greenApi.isConfigured() ? greenApi : NullProvider;
@@ -29,7 +40,26 @@ export async function notifyOrderStatus(
   status: string,
   ctx: OrderMessageContext & { phone: string },
 ): Promise<void> {
-  const body = messageForStatus(status, ctx);
+  // The wording comes from the editable template, falling back to the
+  // catalogue default. An event with no template — 'preparing',
+  // 'completed' — still sends nothing: messaging on every transition
+  // trains people to ignore the messages that matter.
+  const event = eventForOrderStatus(status);
+  if (!event) return;
+
+  const body = await renderFor(event, {
+    name: ctx.customerName,
+    code: ctx.code,
+    total: formatLkr(ctx.totalLkr),
+    fulfillment: FULFILLMENT_LABEL[ctx.fulfillment],
+    track_url: ctx.trackUrl,
+    eta: ctx.etaMinutes,
+    driver: ctx.driverName,
+    driver_phone: ctx.driverPhone,
+    reason: ctx.rejectReason,
+    cash_note: ctx.payToDriver ? `לתשלום לנהג במזומן: ${formatLkr(ctx.totalLkr)}` : null,
+    house: HOUSE_NAME,
+  });
   if (!body) return;
 
   const p = provider();
