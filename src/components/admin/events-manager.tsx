@@ -37,8 +37,11 @@ export function EventsManager({
             start(async () => setResult(await runAction(() => generateEvents(24)) as ActionResult))
           }
         >
-          {pending ? 'פותח…' : 'פתחו 24 מועדים'}
+          {pending ? 'פותח…' : 'פתחו את המועדים הבאים'}
         </button>
+        <Link href="/admin/events/defaults" className="btn btn-ghost btn-sm">
+          הגדרות כל הטפסים
+        </Link>
       </div>
 
       {result && (
@@ -85,6 +88,9 @@ export function EventsManager({
                 <div className="flex gap-2">
                   <Link href={`/admin/events/${e.id}`} className="btn btn-accent btn-sm">
                     נרשמים
+                  </Link>
+                  <Link href={`/admin/events/${e.id}/edit`} className="btn btn-ghost btn-sm">
+                    ערוך
                   </Link>
                   <Link href={`/f/${e.slug}`} className="btn btn-ghost btn-sm">
                     <Icon name="arrow" size={14} />

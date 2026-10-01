@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server';
+import { getEventTemplate } from './event-template';
 import { hasSupabase, TENANT_ID } from '@/lib/config';
 import { getUpcomingOccasions } from '@/lib/data/calendar';
 import type { Occasion } from '@/lib/calendar/occasions';
@@ -33,34 +34,13 @@ export interface EventRecord {
   endsOn: string;
   erevOn: string;
   isOpen: boolean;
+  /** Shown in the public list of upcoming shabbatot. A private event is
+   *  reachable by its link but does not appear there. */
+  isListed: boolean;
   closesHoursBefore: number;
   handEdited: boolean;
   meals: EventMeal[];
 }
-
-/** Defaults from the brief: ליל שבת 55/30, יום שבת 50/25. */
-const DEFAULT_MEALS = [
-  {
-    key: 'friday-night',
-    name: { he: 'סעודת ליל שבת', en: 'Friday night dinner' },
-    sort: 1,
-    types: [
-      { name: { he: 'מבוגר', en: 'Adult' }, kind: 'adult', price: 55, seats: 1 },
-      { name: { he: 'ילד (עד 12)', en: 'Child (under 12)' }, kind: 'child', price: 30, seats: 1 },
-      { name: { he: 'תינוק', en: 'Infant' }, kind: 'infant', price: 0, seats: 0 },
-    ],
-  },
-  {
-    key: 'shabbat-day',
-    name: { he: 'סעודת יום שבת', en: 'Shabbat lunch' },
-    sort: 2,
-    types: [
-      { name: { he: 'מבוגר', en: 'Adult' }, kind: 'adult', price: 50, seats: 1 },
-      { name: { he: 'ילד (עד 12)', en: 'Child (under 12)' }, kind: 'child', price: 25, seats: 1 },
-      { name: { he: 'תינוק', en: 'Infant' }, kind: 'infant', price: 0, seats: 0 },
-    ],
-  },
-] as const;
 
 /** URL-safe slug from the occasion, e.g. shabbat-2026-10-10. */
 function slugFor(o: Occasion): string {
@@ -101,6 +81,7 @@ function shape(r: Record<string, unknown>, meals: EventMeal[]): EventRecord {
     endsOn: r.ends_on as string,
     erevOn: r.erev_on as string,
     isOpen: r.is_open as boolean,
+    isListed: r.is_listed !== false,
     closesHoursBefore: (r.closes_hours_before as number) ?? 24,
     handEdited: Boolean(r.hand_edited),
     meals,
@@ -108,7 +89,18 @@ function shape(r: Record<string, unknown>, meals: EventMeal[]): EventRecord {
 }
 
 /** One event with its meals, types and live seat counts. */
-export async function getEventBySlug(slug: string): Promise<EventRecord | null> {
+/** One event with its meals and prices, for the admin editor. */
+export async function getEventById(id: string): Promise<EventRecord | null> {
+  return loadEvent('id', id);
+}
+
+/**
+ * Load one event with its meals and prices.
+ *
+ * Shared by the public form (by slug) and the admin editor (by id) so the
+ * two can never disagree about what a form contains.
+ */
+async function loadEvent(by: 'slug' | 'id', value: string): Promise<EventRecord | null> {
   if (!hasSupabase()) return null;
   const sb = createServiceClient();
 
@@ -116,7 +108,7 @@ export async function getEventBySlug(slug: string): Promise<EventRecord | null> 
     .from('events')
     .select('*')
     .eq('tenant_id', TENANT_ID)
-    .eq('slug', slug)
+    .eq(by, value)
     .maybeSingle();
 
   if (error || !ev) return null;
@@ -161,6 +153,10 @@ export async function getEventBySlug(slug: string): Promise<EventRecord | null> 
   return shape(ev, shaped);
 }
 
+export async function getEventBySlug(slug: string): Promise<EventRecord | null> {
+  return loadEvent('slug', slug);
+}
+
 export interface GenerateResult {
   created: string[];
   skipped: string[];
@@ -175,11 +171,14 @@ export interface GenerateResult {
  * wording to a nightly job is the fastest way to make them stop trusting
  * the system, so `hand_edited` is a one-way door.
  */
-export async function generateShabbatEvents(count = 24): Promise<GenerateResult> {
+export async function generateShabbatEvents(count?: number): Promise<GenerateResult> {
+  // Read once per run: the generator writes many events from one template.
+  const template = await getEventTemplate();
+  const weeks = count ?? template.weeksAhead;
   if (!hasSupabase()) return { created: [], skipped: [], handEdited: [] };
 
   const sb = createServiceClient();
-  const occasions = getUpcomingOccasions(count);
+  const occasions = getUpcomingOccasions(weeks);
   const result: GenerateResult = { created: [], skipped: [], handEdited: [] };
 
   const { data: existing } = await sb
@@ -205,10 +204,7 @@ export async function generateShabbatEvents(count = 24): Promise<GenerateResult>
         slug: slugFor(o),
         kind: o.kind === 'shabbat' ? 'shabbat' : 'yomtov',
         title: o.title,
-        intro: {
-          he: 'סעודות על שפת הים. מי שמגיע — מוזמן.',
-          en: 'Meals by the sea. Everyone passing through is welcome.',
-        },
+        intro: template.intro,
         occasion_key: key,
         starts_on: o.startDate,
         ends_on: o.endDate,
@@ -219,7 +215,7 @@ export async function generateShabbatEvents(count = 24): Promise<GenerateResult>
 
     if (error || !created) continue;
 
-    for (const m of DEFAULT_MEALS) {
+    for (const m of template.meals) {
       const { data: meal } = await sb
         .from('event_meals')
         .insert({
@@ -227,6 +223,10 @@ export async function generateShabbatEvents(count = 24): Promise<GenerateResult>
           event_id: created.id,
           name: m.name,
           sort: m.sort,
+          capacity: m.capacity,
+          // Relative to candle lighting, so the meal stays where it belongs
+          // in the evening as sunset moves across the year.
+          serves_at: o.candleLighting.plus({ minutes: m.servesOffsetMin }).toISO(),
         })
         .select('id')
         .single();
