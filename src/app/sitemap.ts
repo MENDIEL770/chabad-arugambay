@@ -20,6 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/shabbat', priority: 0.9, freq: 'weekly' },
     { path: '/menu', priority: 0.9, freq: 'weekly' },
     { path: '/zmanim', priority: 0.8, freq: 'daily' },
+    { path: '/kosher', priority: 0.8, freq: 'weekly' },
     { path: '/travel', priority: 0.7, freq: 'monthly' },
     { path: '/whats-on', priority: 0.7, freq: 'weekly' },
     { path: '/about', priority: 0.6, freq: 'monthly' },

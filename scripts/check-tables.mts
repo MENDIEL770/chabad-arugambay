@@ -89,6 +89,7 @@ const BY_MIGRATION: Record<string, string[]> = {
   '0017_event_template':['event_template'],
   '0018_messages':      ['message_templates', 'message_log'],
   '0020_rate_limit':    ['rate_limit_hits'],
+  '0024_kosher':        ['kosher_categories', 'kosher_products'],
 };
 
 /** A function that exists raises its own error; a missing one says so. */

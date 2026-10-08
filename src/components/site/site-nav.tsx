@@ -27,6 +27,7 @@ export const NAV: NavItem[] = [
     children: [
       { href: '/about', label: 'על הבית', hint: 'מי אנחנו ואיפה למצוא אותנו' },
       { href: '/whats-on', label: 'מה קורה בבית', hint: 'שיעורים והתוועדויות' },
+      { href: '/kosher', label: 'מוצרים כשרים', hint: 'מה אפשר לקנות כאן' },
       { href: '/gallery', label: 'גלריה', hint: 'תמונות וסרטונים' },
       { href: '/articles', label: 'מאמרים', hint: 'מדריכים למי שמגיע' },
     ],
